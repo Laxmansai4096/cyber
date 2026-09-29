@@ -1,0 +1,114 @@
+[
+  {
+    "timestamp": "2026-09-29T08:00:10Z",
+    "user_id": "alice_finance",
+    "session_token": "sess_alice_99812",
+    "action": "login_success",
+    "ip_address": "198.51.100.24",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "location": { "city": "New York", "country": "US" },
+    "endpoint": "/api/v1/auth/login",
+    "records_fetched": 0
+  },
+  {
+    "timestamp": "2026-09-29T08:02:15Z",
+    "user_id": "alice_finance",
+    "session_token": "sess_alice_99812",
+    "action": "view_invoice",
+    "ip_address": "198.51.100.24",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "location": { "city": "New York", "country": "US" },
+    "endpoint": "/api/v1/invoices/inv_101",
+    "records_fetched": 1
+  },
+  {
+    "timestamp": "2026-09-29T08:15:00Z",
+    "user_id": "bob_ops",
+    "session_token": "sess_bob_4410",
+    "action": "login_failed",
+    "ip_address": "203.0.113.88",
+    "user_agent": "python-requests/2.28.1",
+    "location": { "city": "Moscow", "country": "RU" },
+    "endpoint": "/api/v1/auth/login",
+    "records_fetched": 0
+  },
+  {
+    "timestamp": "2026-09-29T08:15:04Z",
+    "user_id": "bob_ops",
+    "session_token": "sess_bob_4410",
+    "action": "login_failed",
+    "ip_address": "203.0.113.88",
+    "user_agent": "python-requests/2.28.1",
+    "location": { "city": "Moscow", "country": "RU" },
+    "endpoint": "/api/v1/auth/login",
+    "records_fetched": 0
+  },
+  {
+    "timestamp": "2026-09-29T08:15:08Z",
+    "user_id": "bob_ops",
+    "session_token": "sess_bob_4410",
+    "action": "login_failed",
+    "ip_address": "203.0.113.88",
+    "user_agent": "python-requests/2.28.1",
+    "location": { "city": "Moscow", "country": "RU" },
+    "endpoint": "/api/v1/auth/login",
+    "records_fetched": 0
+  },
+  {
+    "timestamp": "2026-09-29T08:15:12Z",
+    "user_id": "bob_ops",
+    "session_token": "sess_bob_4410",
+    "action": "login_failed",
+    "ip_address": "203.0.113.88",
+    "user_agent": "python-requests/2.28.1",
+    "location": { "city": "Moscow", "country": "RU" },
+    "endpoint": "/api/v1/auth/login",
+    "records_fetched": 0
+  },
+  {
+    "timestamp": "2026-09-29T08:15:15Z",
+    "user_id": "bob_ops",
+    "session_token": "sess_bob_4410",
+    "action": "login_failed",
+    "ip_address": "203.0.113.88",
+    "user_agent": "python-requests/2.28.1",
+    "location": { "city": "Moscow", "country": "RU" },
+    "endpoint": "/api/v1/auth/login",
+    "records_fetched": 0
+  },
+  {
+    "timestamp": "2026-09-29T08:15:20Z",
+    "user_id": "bob_ops",
+    "session_token": "sess_bob_4410",
+    "action": "login_success",
+    "ip_address": "203.0.113.88",
+    "user_agent": "python-requests/2.28.1",
+    "location": { "city": "Moscow", "country": "RU" },
+    "endpoint": "/api/v1/auth/login",
+    "records_fetched": 0
+  },
+  {
+    "timestamp": "2026-09-29T08:18:00Z",
+    "user_id": "alice_finance",
+    "session_token": "sess_alice_99812",
+    "action": "api_request",
+    "ip_address": "45.33.32.156",
+    "user_agent": "curl/7.88.1",
+    "location": { "city": "Frankfurt", "country": "DE" },
+    "endpoint": "/api/v1/customers/export_all",
+    "records_fetched": 12500
+  },
+  {
+    "timestamp": "2026-09-29T08:20:00Z",
+    "user_id": "unknown_intruder",
+    "session_token": "sess_decoy_trigger",
+    "action": "api_request",
+    "ip_address": "185.220.101.5",
+    "user_agent": "Go-http-client/1.1",
+    "location": { "city": "Amsterdam", "country": "NL" },
+    "endpoint": "/api/v1/internal/debug-keys",
+    "token_used": "AKIAIOSFODNN7EXAMPLE",
+    "payload": { "key": "AKIAIOSFODNN7EXAMPLE" },
+    "records_fetched": 0
+  }
+]

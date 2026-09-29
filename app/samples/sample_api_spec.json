@@ -1,0 +1,52 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PaySecure Cloud Microservices API",
+    "version": "1.0.0",
+    "description": "Fintech payment processing and customer wallet API"
+  },
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "summary": "User Authentication",
+        "parameters": [
+          { "name": "email", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "password", "in": "query", "required": true, "schema": { "type": "string" } }
+        ]
+      }
+    },
+    "/api/v1/wallet/transfer": {
+      "post": {
+        "summary": "Transfer Funds",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "recipient_account", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "amount", "in": "query", "required": true, "schema": { "type": "number" } }
+        ]
+      }
+    },
+    "/api/v1/customers/profile": {
+      "get": {
+        "summary": "Get Customer Profile and SSN",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "customer_id", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "ssn", "in": "query", "required": false, "schema": { "type": "string" } }
+        ]
+      }
+    },
+    "/api/v1/internal/admin/system-dump": {
+      "get": {
+        "summary": "Internal System Configuration Dump",
+        "parameters": []
+      }
+    },
+    "/api/v1/users/list-all": {
+      "get": {
+        "summary": "List all active users",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": []
+      }
+    }
+  }
+}

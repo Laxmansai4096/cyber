@@ -1,0 +1,20 @@
+name: CI/CD Pipeline
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Untrusted Fork (Pwn-Request Risk)
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Echo Pull Request Title (Inline Script Injection)
+        run: |
+          echo "Processing PR: ${{ github.event.pull_request.title }}"
+
+      - name: Run Third Party Scanner (Unpinned Commit SHA)
+        uses: external-vendor/security-scanner@master

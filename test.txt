@@ -1,0 +1,236 @@
+================================================================================
+       CYBERSENTINEL AI: 5-PHASE COMPREHENSIVE TEST SUITE & BENCHMARK GUIDE
+================================================================================
+
+This document contains ready-to-test real-world test cases across all 5 phases
+using verified open-source repositories (OWASP crAPI, PyGoat, and DVWA).
+You can copy the raw links or payloads directly into each page on:
+http://localhost:8000
+
+================================================================================
+PHASE 1: ARCHITECTURE REVIEW & STRIDE THREAT MODELING
+================================================================================
+
+TEST CASE 1.1: OWASP crAPI (Cloud-Native Vehicle Microservices API)
+--------------------------------------------------------------------------------
+- Target Repository: OWASP/crAPI (https://github.com/OWASP/crAPI)
+- Direct Raw Spec URL:
+  https://raw.githubusercontent.com/OWASP/crAPI/main/docs/openapi.json
+- What to Test:
+  1. Open http://localhost:8000 and select the "Phase 1: Architecture Review" tab.
+  2. Copy the JSON from the raw URL above (or click "Load Sample API Spec").
+  3. Paste into the left input panel and click "Analyze Architecture & Run STRIDE".
+- Expected Security Findings & AI Output:
+  * Public Internet ➔ Internal API boundary crossings without authentication.
+  * PII parameters passed in URL query strings (e.g. /identity/api/auth/v2/user).
+  * STRIDE Spoofing (S), Elevation of Privilege (E), and Information Disclosure (I) risks.
+  * Gemini AI Advisory Card rendering:
+    - ⚠️ What to Update: Flagged unauthenticated routes & cleartext PII query params.
+    - 🔧 How to Update: Exact OpenAPI 3.0 security scheme attachments and TLS body relocations.
+    - 💡 Strategic Suggestions & 🎯 Prioritized Next Steps.
+    - 📚 Regulatory References: NIST SP 800-207 Zero Trust, OWASP API Security Top 10.
+
+TEST CASE 1.2: FastAPI RealWorld Example App (Conduit API Spec)
+--------------------------------------------------------------------------------
+- Target Repository: nsidnev/fastapi-realworld-example-app
+- Direct Raw Spec URL:
+  https://raw.githubusercontent.com/gothinkster/realworld/main/api/openapi.yml
+- What to Test:
+  1. Paste the YAML/JSON spec into the Phase 1 input box.
+  2. Click "Analyze Architecture & Run STRIDE".
+- Expected Security Findings:
+  * Unbounded collection queries (Denial of Service risk) on /api/articles and /api/tags.
+  * Unauthenticated comment endpoints susceptible to Spam / Tampering (T).
+
+================================================================================
+PHASE 2: CODE REVIEW & WHITE-HAT SAST (AST TAINT & GIT PATCHES)
+================================================================================
+
+TEST CASE 2.1: OWASP crAPI Community Microservice (BOLA/IDOR & SQLi)
+--------------------------------------------------------------------------------
+- Target Repository: OWASP/crAPI
+- Direct File URL:
+  https://raw.githubusercontent.com/OWASP/crAPI/main/services/community/routes/community.py
+- What to Test:
+  1. Go to "Phase 2: Code & Build SAST" tab on http://localhost:8000.
+  2. Copy the raw Python source code from the link above.
+  3. Paste into the left input editor and click "Execute White-Hat Code Review".
+- Expected Security Findings & AI Output:
+  * Broken Object-Level Authorization (CWE-639 / BOLA): user fetching vehicle records
+    without scoping the database query to current_user.id.
+  * SQL Injection sinks (CWE-89) in database query parameters.
+  * Ready-to-merge Unified Git Diff Patches generated automatically with "Copy Patch" buttons.
+  * Gemini AI Advisory Card rendering:
+    - ⚠️ What to Update: Exact vulnerable functions, SQL f-strings, and shell subprocesses.
+    - 🔧 How to Update: Parameterized query bindings and subprocess.run(shell=False) migrations.
+    - 💡 Strategic Suggestions & 🎯 Prioritized Next Steps (CWE references).
+
+TEST CASE 2.2: PyGoat Vulnerable Django Views (Command Injection & Hardcoded Keys)
+--------------------------------------------------------------------------------
+- Target Repository: adeyosemanputra/pygoat (https://github.com/adeyosemanputra/pygoat)
+- Direct File URL:
+  https://raw.githubusercontent.com/adeyosemanputra/pygoat/master/introduction/views.py
+- What to Test:
+  1. Paste the Python code into the Phase 2 input editor.
+  2. Click "Execute White-Hat Code Review".
+- Expected Security Findings & AI Output:
+  * Remote Code / Command Execution (CWE-78 / CWE-95) in os.system / eval calls.
+  * Hardcoded secret keys (CWE-798) and sensitive string credentials.
+  * Auto-generated git patch replacing shell commands with subprocess.run(shell=False).
+  * Gemini AI Advisory Card detailing What & How to Update vulnerable endpoints.
+
+TEST CASE 2.3: Built-In Enterprise Fintech Service (Default Preset)
+--------------------------------------------------------------------------------
+- Local File: app/samples/vulnerable_service.py
+- How to Test:
+  Click "Load Vulnerable Service" in Phase 2 and hit "Execute White-Hat Code Review".
+- Features Tested:
+  Simultaneous detection of SQLi, RCE, IDOR, and AWS Access Key entropy scanning.
+
+================================================================================
+PHASE 3: CI/CD PIPELINE & SUPPLY CHAIN (REACHABLE SBOM)
+================================================================================
+
+TEST CASE 3.1: OWASP crAPI GitHub Actions Workflow & Requirements
+--------------------------------------------------------------------------------
+- Target Repository: OWASP/crAPI
+- Direct Workflow URL:
+  https://raw.githubusercontent.com/OWASP/crAPI/main/.github/workflows/build.yml
+- Direct Requirements URL:
+  https://raw.githubusercontent.com/OWASP/crAPI/main/services/web/package.json
+- What to Test:
+  1. Go to "Phase 3: CI/CD & Supply Chain" tab on http://localhost:8000.
+  2. Paste the build.yml into Box 1 (Workflow).
+  3. Paste the package/requirements into Box 2 (Dependencies).
+  4. Click "Audit CI/CD Pipeline & Trace Reachability".
+- Expected Security Findings & AI Output:
+  * Checks for unpinned action hashes (e.g. actions/checkout@v3 instead of commit SHA).
+  * Evaluates dependency call graphs to filter out 90% of dormant third-party CVEs.
+  * Generates CycloneDX SBOM and SLSA Level 3 hardening checklist.
+  * Gemini AI Advisory Card rendering:
+    - ⚠️ What to Update: Untrusted pull_request_target checkout triggers & unpinned actions.
+    - 🔧 How to Update: Pinning actions to 40-character commit SHAs and upgrading PyYAML/crypto.
+    - 💡 Strategic Suggestions & 🎯 Prioritized Next Steps (SLSA Level 3 references).
+
+TEST CASE 3.2: PyGoat Docker Build Workflow & requirements.txt
+--------------------------------------------------------------------------------
+- Target Repository: adeyosemanputra/pygoat
+- Direct Requirements URL:
+  https://raw.githubusercontent.com/adeyosemanputra/pygoat/master/requirements.txt
+- Direct Workflow URL:
+  https://raw.githubusercontent.com/adeyosemanputra/pygoat/master/.github/workflows/django.yml
+- What to Test:
+  Paste both files into Phase 3 and click "Audit CI/CD Pipeline & Trace Reachability".
+- Expected Security Findings:
+  * Identifies reachable vs dormant CVEs in Django and PyYAML packages.
+  * Flags mutable tag references and recommends commit SHA pinning.
+
+================================================================================
+PHASE 4: STATEFUL DAST & STAGING PROBING (CONTAINER / APIS)
+================================================================================
+
+TEST CASE 4.1: Live Deployed OWASP crAPI Local Container
+--------------------------------------------------------------------------------
+- How to Launch crAPI Locally:
+  git clone https://github.com/OWASP/crAPI.git
+  cd crAPI/deploy/docker
+  docker compose -f docker-compose.yml up -d
+  (Runs at: http://localhost:8888)
+- What to Test:
+  1. Go to "Phase 4: Staging DAST & RBAC" tab on http://localhost:8000.
+  2. In Base URL, enter: http://localhost:8888
+  3. In the Endpoints JSON box, paste:
+[
+  {
+    "path": "/workshop/api/shop/orders/all",
+    "method": "GET",
+    "is_private_user_resource": true,
+    "user_b_response_code": 200,
+    "guest_response_code": 401
+  },
+  {
+    "path": "/identity/api/v2/vehicle/101/location",
+    "method": "GET",
+    "is_private_user_resource": true,
+    "user_b_response_code": 200,
+    "guest_response_code": 401
+  }
+]
+  4. Click "Execute Stateful DAST & RBAC Probes".
+- Expected Security Findings & AI Output:
+  * Dual-User RBAC matrix flags Critical BOLA/IDOR when User B receives HTTP 200 OK.
+  * Missing security headers (HSTS, Content-Security-Policy, X-Frame-Options).
+  * Cloud metadata SSRF probe for http://169.254.169.254.
+  * Reproducible non-destructive curl commands for immediate developer validation.
+  * Gemini AI Advisory Card rendering:
+    - ⚠️ What to Update: Missing tenant ownership filters and wildcard CORS headers.
+    - 🔧 How to Update: Centralized tenancy middleware checks and Nginx HSTS/CORS configs.
+    - 💡 Strategic Suggestions & 🎯 Prioritized Next Steps (OWASP BOLA references).
+
+TEST CASE 4.2: Built-in Enterprise Staging Preset (Default Staging)
+--------------------------------------------------------------------------------
+- How to Test:
+  Click "Load Sample Staging Config" and click "Execute Stateful DAST & RBAC Probes".
+
+================================================================================
+PHASE 5: BLUE TEAM SOC, SESSION TELEMETRY & CALIBRATED CONTAINMENT
+================================================================================
+
+TEST CASE 5.1: Multi-Vector Breach Stream (Default Preset)
+--------------------------------------------------------------------------------
+- Local File: app/samples/runtime_telemetry.json
+- What to Test:
+  1. Go to "Phase 5: Blue Team SOC & Logs" tab on http://localhost:8000.
+  2. Click "Load Breach Telemetry" and hit "Correlate Logs & Detect Threats".
+- Expected Security Findings & AI Output:
+  * Credential Stuffing (T1110): 5 failed logins followed by success from Moscow.
+  * Session Token Hijacking (T1539): Session cookie replayed from Linux/curl in Frankfurt.
+  * Impossible Travel: Account active in New York, then Frankfurt in 15 minutes.
+  * Mass Data Exfiltration (T1048): Bulk export of 12,500 customer records.
+  * Active Honeytoken Canary Triggered: Unauthorized access to decoy AWS key in Amsterdam.
+  * Gemini AI Advisory Card rendering:
+    - ⚠️ What to Update: Active compromised session tokens and edge firewall ACL rules.
+    - 🔧 How to Update: Redis session token purge commands and iptables/WAF block rules.
+    - 💡 Strategic Suggestions & 🎯 Prioritized Next Steps (NIST SP 800-61 & MITRE ATT&CK).
+- Containment Actions to Test:
+  * Click "Level 1: Step-Up MFA" -> Dispatches challenge to target user.
+  * Click "Level 2: Revoke Session" -> Invalidates active JWT cookies in Redis.
+  * Click "Level 3: Quarantine & WAF Block" -> Generates live AWS WAF / iptables rule
+    and logs the action to the real-time Containment Ledger.
+
+TEST CASE 5.2: Custom Live Nginx / Application Log JSON
+--------------------------------------------------------------------------------
+- Test Input Format (Paste directly into Phase 5 input box):
+[
+  {
+    "timestamp": "2026-09-29T10:00:00Z",
+    "user_id": "test_developer",
+    "session_token": "sess_live_12345",
+    "action": "api_request",
+    "ip_address": "198.51.100.55",
+    "user_agent": "Mozilla/5.0",
+    "endpoint": "/api/v1/orders",
+    "records_fetched": 5
+  },
+  {
+    "timestamp": "2026-09-29T10:12:00Z",
+    "user_id": "test_developer",
+    "session_token": "sess_live_12345",
+    "action": "api_request",
+    "ip_address": "45.33.32.156",
+    "user_agent": "curl/8.0.1",
+    "endpoint": "/api/v1/customers/dump",
+    "records_fetched": 4500
+  }
+]
+- Expected Outcome:
+  Instant critical alert for Token Hijacking (T1539) and Data Exfiltration (T1048).
+
+================================================================================
+TESTING CHECKLIST:
+[ ] Phase 1 tested with crAPI OpenAPI spec (STRIDE matrix mapped)
+[ ] Phase 2 tested with community.py / views.py (Git diff patches generated)
+[ ] Phase 3 tested with build.yml & requirements.txt (Reachable SBOM generated)
+[ ] Phase 4 tested with Staging URL & RBAC JSON (Dual-user PoCs generated)
+[ ] Phase 5 tested with session telemetry (1-Click SOAR containment dispatched)
+================================================================================

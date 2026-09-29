@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberSentinel AI | Autonomous White-Hat & Blue Team SecOps</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="stars-bg"></div>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="shield-logo">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <h1>CyberSentinel <span>AI</span></h1>
+        <p class="subtitle">Autonomous White-Hat Auditing & Real-Time Blue Team SOC</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <div class="status-indicator">
+        <span class="pulsing-dot online"></span>
+        <span id="ai-engine-status">AI: Live (Gemini Flash)</span>
+      </div>
+      <button class="btn btn-secondary" id="btn-api-key" title="Configure Google AI Studio Key">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="7.5" cy="15.5" r="5.5"/><path d="M16 8l5-5"/><path d="M15.5 7.5L18 10"/><path d="M18.5 4.5L21 7"/>
+        </svg>
+        <span id="key-btn-text">Google AI Studio Key</span>
+      </button>
+      <button class="btn btn-primary" id="btn-run-all">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Run Full Lifecycle Audit
+      </button>
+    </div>
+  </header>
+
+  <!-- 5-Phase Navigation Bar (Sequential Testing Order) -->
+  <nav class="phase-navbar">
+    <button class="phase-tab active" data-phase="phase1">
+      <span class="step-num">1</span>
+      <div class="phase-info">
+        <strong>Architecture Review</strong>
+        <small>Input: Specs & Boundaries</small>
+      </div>
+    </button>
+    <button class="phase-tab" data-phase="phase2">
+      <span class="step-num">2</span>
+      <div class="phase-info">
+        <strong>Code & Build SAST</strong>
+        <small>Input: Source Code Files</small>
+      </div>
+    </button>
+    <button class="phase-tab" data-phase="phase3">
+      <span class="step-num">3</span>
+      <div class="phase-info">
+        <strong>CI/CD & Supply Chain</strong>
+        <small>Input: Workflow & Deps</small>
+      </div>
+    </button>
+    <button class="phase-tab" data-phase="phase4">
+      <span class="step-num">4</span>
+      <div class="phase-info">
+        <strong>Staging DAST & RBAC</strong>
+        <small>Input: Deployed URL & APIs</small>
+      </div>
+    </button>
+    <button class="phase-tab alert-tab" data-phase="phase5">
+      <span class="step-num pulse-red">5</span>
+      <div class="phase-info">
+        <strong>Blue Team SOC & Logs</strong>
+        <small>Input: Session Telemetry</small>
+      </div>
+    </button>
+  </nav>
+
+  <!-- Main Independent Workbench Area -->
+  <main class="main-content">
+    
+    <!-- PAGE 1: Architecture & Threat Modeling -->
+    <section id="view-phase1" class="phase-view active">
+      <div class="view-header">
+        <div>
+          <h2>Phase 1: Architecture & System Design Threat Modeling</h2>
+          <p>Provide your system architecture description or OpenAPI specification. CyberSentinel AI maps trust boundaries, PII exposure paths, and computes the STRIDE matrix.</p>
+        </div>
+      </div>
+
+      <div class="workbench-grid">
+        <!-- Input Column -->
+        <div class="card glass-panel input-panel">
+          <div class="card-header">
+            <h3>Architecture Input (OpenAPI / JSON Spec)</h3>
+            <div class="panel-actions">
+              <button class="btn btn-sm btn-secondary" id="btn-load-p1-sample">Load Sample API Spec</button>
+              <button class="btn btn-sm btn-ghost" id="btn-clear-p1">Clear</button>
+            </div>
+          </div>
+          <p class="input-hint">Paste OpenAPI 3.0 JSON/YAML or architectural endpoint definitions below:</p>
+          <textarea id="p1-input-text" class="input-editor" placeholder="Paste OpenAPI JSON or system architecture description here..."></textarea>
+          <button class="btn btn-action w-100 mt-12" id="btn-run-phase1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Analyze Architecture & Run STRIDE
+          </button>
+        </div>
+
+        <!-- Output Column -->
+        <div class="card glass-panel output-panel">
+          <div class="card-header">
+            <h3>Phase 1 Results & STRIDE Matrix</h3>
+            <span class="badge" id="p1-threat-count">Ready for input</span>
+          </div>
+
+          <div class="metrics-row">
+            <div class="metric-box">
+              <span class="metric-num" id="p1-endpoints">0</span>
+              <span class="metric-lbl">Endpoints Mapped</span>
+            </div>
+            <div class="metric-box danger">
+              <span class="metric-num" id="p1-critical-threats">0</span>
+              <span class="metric-lbl">Critical / High Risks</span>
+            </div>
+            <div class="metric-box warning">
+              <span class="metric-num" id="p1-pii-flows">0</span>
+              <span class="metric-lbl">PII Ingestion Paths</span>
+            </div>
+          </div>
+
+          <div id="p1-ai-card" class="ai-insight-box"></div>
+
+          <h4 class="section-title">Trust Boundary Crossings</h4>
+          <div id="p1-trust-boundaries" class="list-container">
+            <div class="empty-state">Load a sample or paste an architecture spec on the left to begin.</div>
+          </div>
+
+          <h4 class="section-title">STRIDE Threat Matrix (Identified Flaws)</h4>
+          <div id="p1-stride-list" class="threat-items-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 2: Code Review & White-Hat SAST -->
+    <section id="view-phase2" class="phase-view">
+      <div class="view-header">
+        <div>
+          <h2>Phase 2: Cognitive White-Hat SAST & Unified Git Diff Patches</h2>
+          <p>Provide your source code. The cognitive AST taint tracker maps inputs from source to sink (SQLi, IDOR, RCE, hardcoded secrets) and generates drop-in Git patches.</p>
+        </div>
+      </div>
+
+      <div class="workbench-grid">
+        <!-- Input Column -->
+        <div class="card glass-panel input-panel">
+          <div class="card-header">
+            <h3>Source Code Input</h3>
+            <div class="panel-actions">
+              <button class="btn btn-sm btn-secondary" id="btn-load-p2-sample">Load Vulnerable Service</button>
+              <button class="btn btn-sm btn-ghost" id="btn-clear-p2">Clear</button>
+            </div>
+          </div>
+          <p class="input-hint">Paste Python / JS source code to audit for business logic flaws and secrets:</p>
+          <textarea id="p2-input-code" class="input-editor" placeholder="Paste source code to audit..."></textarea>
+          <button class="btn btn-action w-100 mt-12" id="btn-run-phase2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Execute White-Hat Code Review
+          </button>
+        </div>
+
+        <!-- Output Column -->
+        <div class="card glass-panel output-panel">
+          <div class="card-header">
+            <h3>Vulnerability Findings & Auto-Generated Patches</h3>
+            <span class="badge badge-red" id="p2-vuln-count">Ready for input</span>
+          </div>
+          
+          <div id="p2-ai-card" class="ai-insight-box"></div>
+
+          <div id="p2-findings-list" class="findings-container">
+            <div class="empty-state">Load sample code on the left or paste your files to run the audit.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 3: CI/CD Pipeline & Supply Chain Reachability -->
+    <section id="view-phase3" class="phase-view">
+      <div class="view-header">
+        <div>
+          <h2>Phase 3: CI/CD Pipeline Security & Reachable SBOM Analysis</h2>
+          <p>Provide your GitHub Actions workflow YAML and dependency manifests (requirements.txt). Traces call graphs to eliminate false-positive CVEs.</p>
+        </div>
+      </div>
+
+      <div class="workbench-grid">
+        <!-- Input Column -->
+        <div class="card glass-panel input-panel">
+          <div class="card-header">
+            <h3>Pipeline & Manifest Input</h3>
+            <div class="panel-actions">
+              <button class="btn btn-sm btn-secondary" id="btn-load-p3-sample">Load Sample Workflow & Deps</button>
+              <button class="btn btn-sm btn-ghost" id="btn-clear-p3">Clear</button>
+            </div>
+          </div>
+          <label class="input-label">1. GitHub Actions Workflow (.github/workflows/*.yml):</label>
+          <textarea id="p3-input-workflow" class="input-editor half-editor" placeholder="Paste workflow YAML..."></textarea>
+
+          <label class="input-label mt-12">2. Declared Dependencies (requirements.txt / package.json):</label>
+          <textarea id="p3-input-requirements" class="input-editor half-editor" placeholder="Paste requirements.txt..."></textarea>
+
+          <button class="btn btn-action w-100 mt-12" id="btn-run-phase3">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Audit CI/CD Pipeline & Trace Reachability
+          </button>
+        </div>
+
+        <!-- Output Column -->
+        <div class="card glass-panel output-panel">
+          <div class="card-header">
+            <h3>Pipeline Security & Reachability SBOM</h3>
+            <span class="pill pill-green" id="p3-reduction-rate">90% Noise Filter</span>
+          </div>
+
+          <div id="p3-ai-card" class="ai-insight-box"></div>
+
+          <h4 class="section-title">GitHub Actions Security Findings</h4>
+          <div id="p3-workflow-findings" class="findings-container mb-16">
+            <div class="empty-state">Load a workflow on the left to evaluate pipeline security.</div>
+          </div>
+
+          <h4 class="section-title">Reachability Call-Graph Analysis</h4>
+          <div class="reachability-legend">
+            <span class="leg-item"><span class="dot red"></span> Reachable in Code (Critical)</span>
+            <span class="leg-item"><span class="dot yellow"></span> Imported but Dormant (Low Risk)</span>
+            <span class="leg-item"><span class="dot green"></span> Benign (Passed)</span>
+          </div>
+          <div id="p3-deps-list" class="findings-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 4: Stateful DAST & Staging Endpoints -->
+    <section id="view-phase4" class="phase-view">
+      <div class="view-header">
+        <div>
+          <h2>Phase 4: Stateful DAST & Dual-User RBAC/IDOR Probing</h2>
+          <p>Provide the deployed container URL or staging API. Probes cross-tenant boundaries (User A vs User B vs Guest), tests SSRF cloud metadata, and audits HTTP headers.</p>
+        </div>
+      </div>
+
+      <div class="workbench-grid">
+        <!-- Input Column -->
+        <div class="card glass-panel input-panel">
+          <div class="card-header">
+            <h3>Target Staging Environment Input</h3>
+            <div class="panel-actions">
+              <button class="btn btn-sm btn-secondary" id="btn-load-p4-sample">Load Sample Staging Config</button>
+              <button class="btn btn-sm btn-ghost" id="btn-clear-p4">Clear</button>
+            </div>
+          </div>
+          
+          <label class="input-label">Deployed App / Container Base URL:</label>
+          <input type="text" id="p4-input-url" class="text-input" placeholder="https://staging.yourdomain.com">
+
+          <label class="input-label mt-12">Endpoints & RBAC Test Scenarios (JSON):</label>
+          <textarea id="p4-input-endpoints" class="input-editor" placeholder="Configure endpoints to test cross-tenant access..."></textarea>
+
+          <button class="btn btn-action w-100 mt-12" id="btn-run-phase4">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Execute Stateful DAST & RBAC Probes
+          </button>
+        </div>
+
+        <!-- Output Column -->
+        <div class="card glass-panel output-panel">
+          <div class="card-header">
+            <h3>DAST Findings & Reproducible PoCs</h3>
+            <span class="pill pill-cyan">Dynamic Verification</span>
+          </div>
+
+          <div id="p4-ai-card" class="ai-insight-box"></div>
+
+          <h4 class="section-title">Dual-User Authorization Matrix (BOLA / IDOR)</h4>
+          <div id="p4-rbac-matrix" class="findings-container mb-16">
+            <div class="empty-state">Configure target staging endpoints on the left to begin probing.</div>
+          </div>
+
+          <h4 class="section-title">HTTP Security Headers</h4>
+          <div id="p4-headers-list" class="list-container mb-16"></div>
+
+          <h4 class="section-title">Cloud Metadata (IMDSv1) SSRF Tests</h4>
+          <div id="p4-ssrf-list" class="list-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PAGE 5: Blue Team SOC & Session Telemetry -->
+    <section id="view-phase5" class="phase-view">
+      <div class="view-header">
+        <div>
+          <h2>Phase 5: Blue Team SOC, Session Telemetry & Calibrated Containment</h2>
+          <p>Provide user session streams and API access logs. Detects compromised credentials, impossible travel, session hijacking, honeytoken triggers, and dispatches 1-click containment.</p>
+        </div>
+      </div>
+
+      <div class="workbench-grid">
+        <!-- Input Column -->
+        <div class="card glass-panel input-panel">
+          <div class="card-header">
+            <h3>Live Telemetry Stream Input</h3>
+            <div class="panel-actions">
+              <button class="btn btn-sm btn-secondary" id="btn-load-p5-sample">Load Breach Telemetry</button>
+              <button class="btn btn-sm btn-ghost" id="btn-clear-p5">Clear</button>
+            </div>
+          </div>
+          <p class="input-hint">Paste chronological JSON user session events or access log stream:</p>
+          <textarea id="p5-input-telemetry" class="input-editor" placeholder="Paste session telemetry JSON here..."></textarea>
+          <button class="btn btn-action w-100 mt-12" id="btn-run-phase5">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Correlate Logs & Detect Threats
+          </button>
+        </div>
+
+        <!-- Output Column -->
+        <div class="card glass-panel output-panel">
+          <div class="card-header">
+            <div class="flex-align">
+              <span class="pulsing-dot red"></span>
+              <h3>Active Security Incidents & Threat Feed</h3>
+            </div>
+            <span class="badge badge-red" id="p5-incident-count">-- Threats</span>
+          </div>
+
+          <!-- Gemini AI Briefing Box -->
+          <div id="p5-ai-card" class="ai-insight-box"></div>
+
+          <div id="p5-incidents-feed" class="incidents-container mb-16">
+            <div class="empty-state">Load telemetry stream on the left to start SOC analysis.</div>
+          </div>
+
+          <h4 class="section-title">Calibrated Blast-Radius Containment Ledger</h4>
+          <div id="p5-containment-ledger" class="containment-list">
+            <div class="empty-state">No containment actions dispatched yet. Trigger an action on an incident above.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Google AI Studio Key Modal -->
+  <div class="modal-overlay" id="api-key-modal">
+    <div class="modal-card glass-panel">
+      <div class="modal-header">
+        <h3>Google AI Studio Configuration</h3>
+        <button class="btn-close" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Your <strong>Google AI Studio API Key</strong> is active and connected to Gemini Flash models across all phases.</p>
+        <div class="form-group">
+          <label for="input-api-key">Gemini API Key:</label>
+          <input type="password" id="input-api-key" placeholder="AIzaSy..." autocomplete="off">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modal-cancel">Close</button>
+        <button class="btn btn-primary" id="btn-save-key">Update Key</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
