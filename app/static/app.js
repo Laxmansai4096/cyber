@@ -160,12 +160,49 @@ function initInputHandlers() {
 }
 
 /* -------------------------------------------------------------
-   GitHub One-Click Repository Auditor
+   GitHub One-Click Repository Auditor with Live Execution Pipeline
    ------------------------------------------------------------- */
+function switchTab(phaseName) {
+  const tabs = document.querySelectorAll(".phase-tab");
+  tabs.forEach(t => {
+    if (t.getAttribute("data-phase") === phaseName) {
+      t.classList.add("active");
+    } else {
+      t.classList.remove("active");
+    }
+  });
+  document.querySelectorAll(".phase-view").forEach(view => {
+    view.classList.remove("active");
+  });
+  const targetView = document.getElementById(`view-${phaseName}`);
+  if (targetView) targetView.classList.add("active");
+}
+
 function initRepoAuditor() {
   const btnAudit = document.getElementById("btn-ingest-repo");
   const inputRepo = document.getElementById("input-repo-url");
-  const statusBar = document.getElementById("repo-ingest-status");
+  const tracker = document.getElementById("repo-pipeline-tracker");
+  const pBar = document.getElementById("pipeline-progress-bar");
+  const pPercent = document.getElementById("pipeline-percent");
+  const pTitle = document.getElementById("pipeline-title");
+  const pPulse = document.getElementById("pipeline-pulse");
+
+  // Step Elements
+  const sClone = document.getElementById("pstep-clone");
+  const sClonePill = document.getElementById("pstep-clone-pill");
+  const sCloneDetail = document.getElementById("pstep-clone-detail");
+
+  const sP1 = document.getElementById("pstep-p1");
+  const sP1Pill = document.getElementById("pstep-p1-pill");
+  const sP1Detail = document.getElementById("pstep-p1-detail");
+
+  const sP2 = document.getElementById("pstep-p2");
+  const sP2Pill = document.getElementById("pstep-p2-pill");
+  const sP2Detail = document.getElementById("pstep-p2-detail");
+
+  const sP3 = document.getElementById("pstep-p3");
+  const sP3Pill = document.getElementById("pstep-p3-pill");
+  const sP3Detail = document.getElementById("pstep-p3-detail");
 
   // Presets
   const presets = [
@@ -196,58 +233,149 @@ function initRepoAuditor() {
   }
 
   async function triggerRepoAudit(repoUrl) {
-    statusBar.style.display = "flex";
-    statusBar.innerHTML = `
-      <div class="flex-align">
-        <span class="pulsing-dot online"></span>
-        <span>Cloning and inspecting <code>${escapeHtml(repoUrl)}</code> (discovering architecture, source code, CI/CD & SBOM)...</span>
-      </div>
-    `;
+    tracker.style.display = "flex";
     btnAudit.disabled = true;
-    showToast("Cloning GitHub repository shallow tree...");
+
+    // Reset pipeline state
+    pBar.style.width = "10%";
+    pPercent.textContent = "10%";
+    pTitle.textContent = `Live Execution: Ingesting repository ${repoUrl}...`;
+    pPulse.className = "pulsing-dot online";
+
+    sClone.className = "pipe-step active";
+    sClonePill.className = "pstep-status-pill pill-yellow";
+    sClonePill.textContent = "Processing";
+    sCloneDetail.textContent = "Cloning shallow git tree & extracting files...";
+
+    sP1.className = "pipe-step";
+    sP1Pill.className = "pstep-status-pill";
+    sP1Pill.textContent = "Queued";
+    sP1Detail.textContent = "Waiting for architecture spec discovery...";
+
+    sP2.className = "pipe-step";
+    sP2Pill.className = "pstep-status-pill";
+    sP2Pill.textContent = "Queued";
+    sP2Detail.textContent = "Waiting for source code extraction...";
+
+    sP3.className = "pipe-step";
+    sP3Pill.className = "pstep-status-pill";
+    sP3Pill.textContent = "Queued";
+    sP3Detail.textContent = "Waiting for workflows & dependencies...";
+
+    showToast("Step 1: Shallow cloning repository from GitHub...");
 
     try {
+      // ---------------------------------------------------------
+      // STEP 1: GitHub Shallow Ingestion
+      // ---------------------------------------------------------
       const resp = await fetch("/api/ingest/github-repo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ repo_url: repoUrl })
       });
       const data = await resp.json();
-      btnAudit.disabled = false;
 
       if (!resp.ok) {
-        statusBar.innerHTML = `<span style="color:var(--red-critical);">❌ Error: ${escapeHtml(data.detail || "Failed to clone repository")}</span>`;
+        btnAudit.disabled = false;
+        sClone.className = "pipe-step error";
+        sClonePill.className = "pstep-status-pill pill-red";
+        sClonePill.textContent = "Failed";
+        sCloneDetail.textContent = data.detail || "Clone failed";
+        pTitle.textContent = "Execution Failed during Clone";
+        pPulse.className = "pulsing-dot red";
+        showToast("Error cloning repository: " + (data.detail || "Network error"));
         return;
       }
 
-      // Populate Phase 1 (Architecture & STRIDE)
+      // Mark Step 1 Done
+      sClone.className = "pipe-step done";
+      sClonePill.className = "pstep-status-pill pill-green";
+      sClonePill.textContent = "Done ✓";
+      sCloneDetail.textContent = `Found ${data.stats.source_files_found} files (${data.architecture_filename})`;
+
+      // Populate Inputs
       document.getElementById("p1-input-text").value = data.architecture_spec;
-
-      // Populate Phase 2 (Code Review & SAST)
       document.getElementById("p2-input-code").value = data.primary_source_code;
-
-      // Populate Phase 3 (CI/CD & Supply Chain)
       document.getElementById("p3-input-workflow").value = data.workflow_content;
       document.getElementById("p3-input-requirements").value = data.dependencies_content;
 
-      statusBar.innerHTML = `
-        <div class="flex-align">
-          <span style="color:var(--green-success); font-weight:700;">✓ Ingested ${escapeHtml(data.repo_name)}:</span>
-          <span>Arch: <code>${escapeHtml(data.architecture_filename)}</code> | Code: <code>${escapeHtml(data.primary_source_filename)}</code> (${data.stats.source_files_found} files) | Workflow: <code>${escapeHtml(data.workflow_filename)}</code> | Deps: <code>${escapeHtml(data.dependencies_filename)}</code></span>
-        </div>
-        <span class="pill pill-green">Audit Running</span>
-      `;
+      // ---------------------------------------------------------
+      // STEP 2: Phase 1 Architecture Review & STRIDE
+      // ---------------------------------------------------------
+      pBar.style.width = "35%";
+      pPercent.textContent = "35%";
+      pTitle.textContent = `Step 2/4: Phase 1 Architecture Threat Modeling (${data.architecture_filename})...`;
+      sP1.className = "pipe-step active";
+      sP1Pill.className = "pstep-status-pill pill-yellow";
+      sP1Pill.textContent = "Processing";
+      sP1Detail.textContent = "Analyzing routes, trust boundaries & STRIDE matrix...";
+      switchTab("phase1");
+      showToast("Phase 1: Computing STRIDE Threat Matrix...");
 
-      showToast(`Repository ${data.repo_name} ingested! Running multi-phase security review...`);
+      await runPhase1();
 
-      // Trigger automatic review across all 3 code/pipeline phases
-      runPhase1();
-      runPhase2();
-      runPhase3();
+      sP1.className = "pipe-step done";
+      sP1Pill.className = "pstep-status-pill pill-green";
+      sP1Pill.textContent = "Done ✓";
+      const p1Count = document.getElementById("p1-threat-count") ? document.getElementById("p1-threat-count").textContent : "Threats Mapped";
+      sP1Detail.textContent = `Completed: ${p1Count}`;
+
+      // ---------------------------------------------------------
+      // STEP 3: Phase 2 Cognitive SAST & Code Patches
+      // ---------------------------------------------------------
+      pBar.style.width = "65%";
+      pPercent.textContent = "65%";
+      pTitle.textContent = `Step 3/4: Phase 2 Cognitive SAST (${data.primary_source_filename})...`;
+      sP2.className = "pipe-step active";
+      sP2Pill.className = "pstep-status-pill pill-yellow";
+      sP2Pill.textContent = "Processing";
+      sP2Detail.textContent = "Running AST Taint scan & formulating Git diff patches...";
+      switchTab("phase2");
+      showToast("Phase 2: Scanning code for AST flaws and generating patches...");
+
+      await runPhase2();
+
+      sP2.className = "pipe-step done";
+      sP2Pill.className = "pstep-status-pill pill-green";
+      sP2Pill.textContent = "Done ✓";
+      const p2Count = document.getElementById("p2-vuln-count") ? document.getElementById("p2-vuln-count").textContent : "Patches Ready";
+      sP2Detail.textContent = `Completed: ${p2Count}`;
+
+      // ---------------------------------------------------------
+      // STEP 4: Phase 3 CI/CD & Reachable SBOM
+      // ---------------------------------------------------------
+      pBar.style.width = "90%";
+      pPercent.textContent = "90%";
+      pTitle.textContent = `Step 4/4: Phase 3 CI/CD & Supply Chain SBOM (${data.dependencies_filename})...`;
+      sP3.className = "pipe-step active";
+      sP3Pill.className = "pstep-status-pill pill-yellow";
+      sP3Pill.textContent = "Processing";
+      sP3Detail.textContent = "Auditing workflow triggers & reaching SBOM call-graphs...";
+      switchTab("phase3");
+      showToast("Phase 3: Auditing CI/CD workflow and dependency reachability...");
+
+      await runPhase3();
+
+      sP3.className = "pipe-step done";
+      sP3Pill.className = "pstep-status-pill pill-green";
+      sP3Pill.textContent = "Done ✓";
+      sP3Detail.textContent = `CycloneDX SBOM & SLSA Level 3 Hardened`;
+
+      // ---------------------------------------------------------
+      // COMPLETE
+      // ---------------------------------------------------------
+      pBar.style.width = "100%";
+      pPercent.textContent = "100%";
+      pTitle.textContent = `🎉 Complete! ${data.repo_name} fully audited across Architecture, SAST, & CI/CD.`;
+      pPulse.className = "pulsing-dot online";
+      btnAudit.disabled = false;
+      showToast(`Repository ${data.repo_name} audit completed across all phases!`);
 
     } catch (err) {
       btnAudit.disabled = false;
-      statusBar.innerHTML = `<span style="color:var(--red-critical);">❌ Ingestion Error: ${escapeHtml(err.message)}</span>`;
+      pTitle.textContent = `Audit Stopped: ${err.message}`;
+      pPulse.className = "pulsing-dot red";
+      showToast("Execution error: " + err.message);
     }
   }
 }
@@ -1180,4 +1308,220 @@ function escapeHtml(str) {
 function getListWithFallback(arr, fallback) {
   return (Array.isArray(arr) && arr.length > 0) ? arr : fallback;
 }
+
+/* -------------------------------------------------------------
+   Programmatic Tab Switcher
+   ------------------------------------------------------------- */
+function switchTab(phase) {
+  const tabs = document.querySelectorAll(".phase-tab");
+  tabs.forEach(t => {
+    if (t.getAttribute("data-phase") === phase) {
+      t.classList.add("active");
+    } else {
+      t.classList.remove("active");
+    }
+  });
+  document.querySelectorAll(".phase-view").forEach(view => {
+    view.classList.remove("active");
+  });
+  const targetView = document.getElementById(`view-${phase}`);
+  if (targetView) targetView.classList.add("active");
+}
+
+/* -------------------------------------------------------------
+   One-Click GitHub Repository Auditor & Live Phase Pipeline
+   ------------------------------------------------------------- */
+function initRepoAuditor() {
+  const btnIngest = document.getElementById("btn-ingest-repo");
+  const inputRepo = document.getElementById("input-repo-url");
+  if (!btnIngest || !inputRepo) return;
+
+  btnIngest.addEventListener("click", () => {
+    const url = inputRepo.value.trim();
+    if (!url) {
+      showToast("Please enter a valid GitHub repository URL");
+      inputRepo.focus();
+      return;
+    }
+    triggerRepoAudit(url);
+  });
+
+  inputRepo.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      btnIngest.click();
+    }
+  });
+
+  // Preset repo quick-buttons
+  ["preset-crapi", "preset-pygoat", "preset-fastapi"].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const url = btn.getAttribute("data-url");
+        if (url) {
+          inputRepo.value = url;
+          triggerRepoAudit(url);
+        }
+      });
+    }
+  });
+}
+
+function setPipelineStep(stepId, state, detailText) {
+  const stepEl = document.getElementById(stepId);
+  const pillEl = document.getElementById(`${stepId}-pill`);
+  const detailEl = document.getElementById(`${stepId}-detail`);
+  if (!stepEl || !pillEl || !detailEl) return;
+
+  stepEl.classList.remove("active", "done", "error");
+  pillEl.className = "pstep-status-pill";
+
+  if (state === "processing") {
+    stepEl.classList.add("active");
+    pillEl.classList.add("pill-yellow");
+    pillEl.textContent = "Processing";
+  } else if (state === "done") {
+    stepEl.classList.add("done");
+    pillEl.classList.add("pill-green");
+    pillEl.textContent = "Completed ✓";
+  } else if (state === "error") {
+    stepEl.classList.add("error");
+    pillEl.classList.add("pill-red");
+    pillEl.textContent = "Failed ✕";
+  } else {
+    // queued
+    pillEl.classList.add("pill-queued");
+    pillEl.textContent = "Queued";
+  }
+
+  if (detailText) {
+    detailEl.textContent = detailText;
+  }
+}
+
+function updatePipelineProgress(percent, title) {
+  const bar = document.getElementById("pipeline-progress-bar");
+  const text = document.getElementById("pipeline-percent");
+  const titleEl = document.getElementById("pipeline-title");
+  if (bar) bar.style.width = `${percent}%`;
+  if (text) text.textContent = `${percent}%`;
+  if (title && titleEl) titleEl.textContent = title;
+}
+
+async function triggerRepoAudit(repoUrl) {
+  const tracker = document.getElementById("repo-pipeline-tracker");
+  const btnIngest = document.getElementById("btn-ingest-repo");
+  if (tracker) {
+    tracker.style.display = "block";
+    tracker.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  if (btnIngest) {
+    btnIngest.disabled = true;
+    btnIngest.innerHTML = `
+      <span class="pulsing-dot warning"></span>
+      Auditing Pipeline...
+    `;
+  }
+
+  // Reset all steps to initial state
+  updatePipelineProgress(10, `Live Status: Connecting to ${repoUrl}...`);
+  setPipelineStep("pstep-clone", "processing", `Initiating git shallow clone (--depth 1) for ${repoUrl}...`);
+  setPipelineStep("pstep-p1", "queued", "Phase 1: Waiting for spec extraction...");
+  setPipelineStep("pstep-p2", "queued", "Phase 2: Waiting for source code extraction...");
+  setPipelineStep("pstep-p3", "queued", "Phase 3: Waiting for workflow & SBOM manifest...");
+  setPipelineStep("pstep-p45", "queued", "Phase 4 & 5: Waiting for pipeline completion...");
+
+  try {
+    // 1. BACKEND GIT INGESTION
+    const resp = await fetch("/api/ingest/github-repo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repo_url: repoUrl })
+    });
+
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.detail || `HTTP ${resp.status}: Failed to clone repository`);
+    }
+
+    const data = await resp.json();
+    setPipelineStep("pstep-clone", "done", `Extracted ${data.architecture_filename}, ${data.primary_source_filename}, and ${data.workflow_filename}.`);
+    updatePipelineProgress(25, `Live Status: Ingestion Complete for ${data.repo_name}. Starting Phase 1...`);
+    showToast(`Repository ${data.repo_name} extracted successfully! Starting Phase 1...`);
+
+    // 2. PHASE 1: Architecture Review (STRIDE Threat Model)
+    setPipelineStep("pstep-p1", "processing", `Phase 1 started: Evaluating ${data.architecture_filename} with Google Gemini AI...`);
+    updatePipelineProgress(35, `Live Status: Executing Phase 1 (Architecture STRIDE Analysis)...`);
+    switchTab("phase1");
+    if (data.architecture_spec) {
+      const p1Input = document.getElementById("p1-input-text");
+      if (p1Input) p1Input.value = data.architecture_spec;
+    }
+    await runPhase1();
+    setPipelineStep("pstep-p1", "done", `Phase 1 completed: STRIDE Threat Model generated & trust boundaries verified.`);
+    updatePipelineProgress(50, `Live Status: Phase 1 Completed. Starting Phase 2 SAST...`);
+
+    // 3. PHASE 2: Code & Build SAST Patches
+    setPipelineStep("pstep-p2", "processing", `Phase 2 started: Analyzing AST sinks in ${data.primary_source_filename} & generating git diff patches...`);
+    updatePipelineProgress(60, `Live Status: Executing Phase 2 (Cognitive SAST Code Review)...`);
+    switchTab("phase2");
+    if (data.primary_source_code) {
+      const p2Input = document.getElementById("p2-input-code");
+      if (p2Input) p2Input.value = data.primary_source_code;
+    }
+    await runPhase2();
+    setPipelineStep("pstep-p2", "done", `Phase 2 completed: Code vulnerabilities isolated & unified git diffs generated.`);
+    updatePipelineProgress(75, `Live Status: Phase 2 Completed. Starting Phase 3 Supply Chain...`);
+
+    // 4. PHASE 3: CI/CD Pipeline & Supply Chain
+    setPipelineStep("pstep-p3", "processing", `Phase 3 started: Auditing CI/CD workflow (${data.workflow_filename}) & Reachable SBOM...`);
+    updatePipelineProgress(85, `Live Status: Executing Phase 3 (Supply Chain & CI/CD Review)...`);
+    switchTab("phase3");
+    if (data.workflow_content) {
+      const p3Wf = document.getElementById("p3-input-workflow");
+      if (p3Wf) p3Wf.value = data.workflow_content;
+    }
+    if (data.dependencies_content) {
+      const p3Deps = document.getElementById("p3-input-requirements");
+      if (p3Deps) p3Deps.value = data.dependencies_content;
+    }
+    await runPhase3();
+    setPipelineStep("pstep-p3", "done", `Phase 3 completed: Reachable SBOM resolved; false-positive alerts suppressed.`);
+    updatePipelineProgress(92, `Live Status: Phase 3 Completed. Running Phase 4 & 5 autonomous baseline...`);
+
+    // 5. PHASE 4 & 5: Autonomous DAST & Telemetry Baseline
+    setPipelineStep("pstep-p45", "processing", `Phase 4 & 5 started: Running active security verification & SOC baseline...`);
+    await runPhase4();
+    await runPhase5();
+    setPipelineStep("pstep-p45", "done", `Phase 4 & 5 completed: Autonomous verification & SOC anomaly baseline synchronized.`);
+
+    updatePipelineProgress(100, `✓ Audit Complete: All 5 Security Lifecycle Phases Audited Successfully for ${data.repo_name}!`);
+    showToast(`Complete 5-Phase Audit Finished for ${data.repo_name}!`);
+
+  } catch (err) {
+    console.error("Pipeline execution error:", err);
+    updatePipelineProgress(100, `Pipeline Error: ${err.message}`);
+    showToast(`Error during audit: ${err.message}`);
+
+    // Mark active/processing step as error
+    ["pstep-clone", "pstep-p1", "pstep-p2", "pstep-p3", "pstep-p45"].forEach(id => {
+      const step = document.getElementById(id);
+      if (step && step.classList.contains("active")) {
+        setPipelineStep(id, "error", `Failed: ${err.message}`);
+      }
+    });
+  } finally {
+    if (btnIngest) {
+      btnIngest.disabled = false;
+      btnIngest.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        Clone & Audit Entire Repo
+      `;
+    }
+  }
+}
+
 

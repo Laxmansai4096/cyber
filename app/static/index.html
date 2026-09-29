@@ -71,7 +71,72 @@
         <button class="btn btn-xs btn-ghost" id="preset-fastapi" data-url="https://github.com/nsidnev/fastapi-realworld-example-app">FastAPI RealWorld</button>
       </div>
     </div>
-    <div id="repo-ingest-status" class="repo-status-bar" style="display:none;"></div>
+    
+    <!-- Live Multi-Phase Execution Tracker Panel -->
+    <div id="repo-pipeline-tracker" class="pipeline-tracker" style="display:none;">
+      <div class="pipeline-header">
+        <div class="flex-align">
+          <span class="pulsing-dot online" id="pipeline-pulse"></span>
+          <strong id="pipeline-title">Live Execution Status: Ingesting Repository...</strong>
+        </div>
+        <div class="pipeline-progress-bar-bg">
+          <div id="pipeline-progress-bar" class="pipeline-progress-bar-fill" style="width: 15%;"></div>
+        </div>
+        <span id="pipeline-percent" class="pipeline-percent">15%</span>
+      </div>
+
+      <div class="pipeline-steps-grid">
+        <!-- Step 1: Git Ingestion -->
+        <div class="pipe-step active" id="pstep-clone">
+          <div class="pstep-badge"><span class="step-icon">🐙</span></div>
+          <div class="pstep-body">
+            <strong>1. Git Shallow Clone & Discovery</strong>
+            <small id="pstep-clone-detail">Cloning shallow tree & discovering files...</small>
+          </div>
+          <span class="pstep-status-pill pill-yellow" id="pstep-clone-pill">Processing</span>
+        </div>
+
+        <!-- Step 2: Phase 1 -->
+        <div class="pipe-step" id="pstep-p1">
+          <div class="pstep-badge"><span class="step-icon">📐</span></div>
+          <div class="pstep-body">
+            <strong>2. Phase 1: Architecture Review</strong>
+            <small id="pstep-p1-detail">Waiting for spec discovery...</small>
+          </div>
+          <span class="pstep-status-pill" id="pstep-p1-pill">Queued</span>
+        </div>
+
+        <!-- Step 3: Phase 2 -->
+        <div class="pipe-step" id="pstep-p2">
+          <div class="pstep-badge"><span class="step-icon">🔍</span></div>
+          <div class="pstep-body">
+            <strong>3. Phase 2: Cognitive SAST Patches</strong>
+            <small id="pstep-p2-detail">Waiting for source code extraction...</small>
+          </div>
+          <span class="pstep-status-pill" id="pstep-p2-pill">Queued</span>
+        </div>
+
+        <!-- Step 4: Phase 3 -->
+        <div class="pipe-step" id="pstep-p3">
+          <div class="pstep-badge"><span class="step-icon">📦</span></div>
+          <div class="pstep-body">
+            <strong>4. Phase 3: CI/CD & Reachable SBOM</strong>
+            <small id="pstep-p3-detail">Waiting for workflows & requirements...</small>
+          </div>
+          <span class="pstep-status-pill pill-queued" id="pstep-p3-pill">Queued</span>
+        </div>
+
+        <!-- Step 5: Phase 4 & 5 -->
+        <div class="pipe-step" id="pstep-p45">
+          <div class="pstep-badge"><span class="step-icon">🛡️</span></div>
+          <div class="pstep-body">
+            <strong>5. Phase 4 & 5: DAST & SOC UEBA</strong>
+            <small id="pstep-p45-detail">Waiting for build verification...</small>
+          </div>
+          <span class="pstep-status-pill pill-queued" id="pstep-p45-pill">Queued</span>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- 5-Phase Navigation Bar (Sequential Testing Order) -->
