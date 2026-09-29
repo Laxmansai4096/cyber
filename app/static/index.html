@@ -30,13 +30,13 @@
     <div class="header-actions">
       <div class="status-indicator">
         <span class="pulsing-dot online"></span>
-        <span id="ai-engine-status">AI: Live (Gemini Flash)</span>
+        <span id="ai-engine-status">AI: Live (SOTA Cyber Engine)</span>
       </div>
-      <button class="btn btn-secondary" id="btn-api-key" title="Configure Google AI Studio Key">
+      <button class="btn btn-secondary" id="btn-api-key" title="Configure AI Provider & Model">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="7.5" cy="15.5" r="5.5"/><path d="M16 8l5-5"/><path d="M15.5 7.5L18 10"/><path d="M18.5 4.5L21 7"/>
         </svg>
-        <span id="key-btn-text">Google AI Studio Key</span>
+        <span id="key-btn-text">AI Model & Key</span>
       </button>
       <button class="btn btn-primary" id="btn-run-all">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -359,23 +359,61 @@
 
   </main>
 
-  <!-- Google AI Studio Key Modal -->
+  <!-- Multi-Model AI Configuration Center Modal -->
   <div class="modal-overlay" id="api-key-modal">
-    <div class="modal-card glass-panel">
+    <div class="modal-card glass-panel" style="max-width: 560px;">
       <div class="modal-header">
-        <h3>Google AI Studio Configuration</h3>
+        <div>
+          <h3 style="margin-bottom: 2px;">AI Model & Provider Configuration</h3>
+          <p style="font-size:0.75rem; color:var(--text-muted); margin:0;">Switch between SOTA reasoning models, code patch generators, and ultra-fast inference.</p>
+        </div>
         <button class="btn-close" id="modal-close">&times;</button>
       </div>
       <div class="modal-body">
-        <p>Your <strong>Google AI Studio API Key</strong> is active and connected to Gemini Flash models across all phases.</p>
+        
         <div class="form-group">
-          <label for="input-api-key">Gemini API Key:</label>
-          <input type="password" id="input-api-key" placeholder="AIzaSy..." autocomplete="off">
+          <label for="select-provider">AI Provider:</label>
+          <select id="select-provider">
+            <option value="google">Google Gemini (AI Studio Free Tier - 1M Context)</option>
+            <option value="groq">Groq (Ultra-Fast 300+ TPS - Llama 3.3 70B & DeepSeek)</option>
+            <option value="openrouter">OpenRouter (Free SOTA - DeepSeek R1 & Qwen 2.5 Coder)</option>
+            <option value="cerebras">Cerebras Cloud (1800+ TPS Low Latency - Llama 3.1 70B)</option>
+            <option value="deepseek">DeepSeek API (SOTA Code Reasoning - R1 / V3)</option>
+            <option value="sambanova">SambaNova Cloud (DeepSeek V3.1)</option>
+            <option value="huggingface">Hugging Face Serverless (Qwen 2.5 Coder 32B)</option>
+            <option value="mistral">Mistral AI (Codestral & Mistral Large)</option>
+            <option value="custom">Custom OpenAI-Compatible Endpoint</option>
+          </select>
         </div>
+
+        <div class="form-group">
+          <label for="select-model">AI Model / Task Routing:</label>
+          <select id="select-model">
+            <option value="auto">Auto-Optimal (Task-Specialized: DeepSeek/Qwen for SAST, Llama for SOC, Gemini for Specs)</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="group-base-url" style="display:none;">
+          <label for="input-base-url">Custom Base URL (OpenAI-compatible):</label>
+          <input type="text" id="input-base-url" placeholder="https://api.example.com/v1" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label for="input-api-key" id="label-api-key" style="margin:0;">Provider API Key:</label>
+            <a id="key-guide-link" class="key-link-badge" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">🔑 Get Free Key →</a>
+          </div>
+          <input type="password" id="input-api-key" placeholder="Paste your API key here..." autocomplete="off" style="margin-top:6px;">
+        </div>
+
+        <div style="padding:10px 14px; background:rgba(0,242,254,0.06); border:1px solid rgba(0,242,254,0.2); border-radius:var(--radius-sm); font-size:0.75rem; color:var(--text-muted);">
+          💡 <strong>Tip:</strong> For best code analysis and unified git patch generation (Phase 2), use <strong>DeepSeek R1</strong> or <strong>Qwen 2.5 Coder</strong>. For large OpenAPI specs and SBOMs (Phases 1 & 3), use <strong>Gemini 2.5 Flash</strong> (1M context). For real-time SOC logs (Phase 5), use <strong>Groq Llama 3.3 70B</strong>.
+        </div>
+
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer" style="margin-top:16px;">
         <button class="btn btn-secondary" id="modal-cancel">Close</button>
-        <button class="btn btn-primary" id="btn-save-key">Update Key</button>
+        <button class="btn btn-primary" id="btn-save-key">Activate Model & Key</button>
       </div>
     </div>
   </div>

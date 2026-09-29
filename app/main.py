@@ -76,24 +76,45 @@ cicd_engine = CICDSupplyChainEngine()
 dast_engine = StatefulDASTEngine()
 soc_engine = BlueTeamSOCEngine()
 
+from app.engines.ai_core import ai_core, PROVIDER_PRESETS
+
 @app.get("/api/status")
 async def get_status():
     return {
         "status": "ONLINE",
         "system": "CyberSentinel AI Autonomous SecOps",
         "has_gemini_key": ai_core.has_active_key(),
-        "model": "gemini-2.0-flash / gemini-2.5-flash",
+        "provider": ai_core.get_provider_name(),
+        "model": ai_core.get_active_model(),
+        "available_providers": [
+            {
+                "id": pid,
+                "name": pdata["name"],
+                "default_model": pdata["default_model"],
+                "models": pdata["models"]
+            }
+            for pid, pdata in PROVIDER_PRESETS.items()
+        ],
         "phases_ready": ["Phase 1 (Architecture)", "Phase 2 (SAST)", "Phase 3 (CI/CD Supply Chain)", "Phase 4 (DAST)", "Phase 5 (SOC UEBA)"]
     }
 
 @app.post("/api/set-api-key")
-async def set_api_key(payload: Dict[str, str] = Body(...)):
-    key = payload.get("key", "").strip()
+async def set_api_key(payload: Dict[str, Any] = Body(...)):
+    key = str(payload.get("key", "")).strip()
+    provider = str(payload.get("provider", "")).strip()
+    model = str(payload.get("model", "")).strip()
+    base_url = str(payload.get("base_url", "")).strip()
     if not key:
-        raise HTTPException(status_code=400, detail="Key cannot be empty")
-    ai_core.set_api_key(key)
-    os.environ["GEMINI_API_KEY"] = key
-    return {"status": "SUCCESS", "message": "Google AI Studio Key configured successfully"}
+        raise HTTPException(status_code=400, detail="API Key cannot be empty")
+    ai_core.set_api_key(key, base_url=base_url, model=model, provider=provider)
+    if provider == "google" or not provider:
+        os.environ["GEMINI_API_KEY"] = key
+    return {
+        "status": "SUCCESS",
+        "provider": ai_core.get_provider_name(),
+        "model": ai_core.get_active_model(),
+        "message": f"Successfully activated {ai_core.get_provider_name()} with model {ai_core.get_active_model()}"
+    }
 
 # -------------------------------------------------------------
 # PHASE 1: Architecture & Threat Modeling

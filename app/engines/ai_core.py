@@ -1,7 +1,11 @@
 """
-CyberSentinel AI - Unified Gemini AI Core Engine
-Connects directly to Google AI Studio (Gemini 2.5 / 2.0 Flash) API.
-Drives deep reasoning across all 5 phases: Threat Modeling, SAST Patches, Supply Chain, DAST, and SOC UEBA.
+CyberSentinel AI - Unified Multi-Provider AI Core Engine
+Powered by SOTA Open-Source & Enterprise AI Models from awesome-freellm-apis catalog:
+- DeepSeek-R1 / DeepSeek-V3 (SOTA for Cognitive SAST & Reasoning)
+- Qwen 2.5 Coder 32B (SOTA for Code Security & AST Patches)
+- Llama 3.3 70B Versatile via Groq / Cerebras (Ultra-fast real-time SOC analysis)
+- Google Gemini 2.5 Flash / 2.0 Flash / 1.5 Pro (1M+ Token Context for large specs & SBOMs)
+- Mistral Large & Codestral (Advanced Code Security Auditing)
 """
 import os
 import json
@@ -19,134 +23,286 @@ except Exception:
 
 logger = logging.getLogger("ai_core")
 
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+# Provider Presets with Optimal Base URLs & Models
+PROVIDER_PRESETS = {
+    "google": {
+        "name": "Google Gemini (AI Studio)",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta",
+        "default_model": "gemini-2.5-flash",
+        "models": ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
+        "is_native_gemini": True,
+    },
+    "groq": {
+        "name": "Groq (Ultra-Fast 300+ TPS)",
+        "base_url": "https://api.groq.com/openai/v1",
+        "default_model": "llama-3.3-70b-versatile",
+        "models": ["llama-3.3-70b-versatile", "deepseek-r1-distill-llama-70b", "mixtral-8x7b-32768"],
+        "is_native_gemini": False,
+    },
+    "openrouter": {
+        "name": "OpenRouter (Free SOTA Models)",
+        "base_url": "https://openrouter.ai/api/v1",
+        "default_model": "deepseek/deepseek-r1:free",
+        "models": [
+            "deepseek/deepseek-r1:free",
+            "qwen/qwen-2.5-coder-32b-instruct:free",
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "google/gemini-2.0-flash-exp:free"
+        ],
+        "is_native_gemini": False,
+    },
+    "cerebras": {
+        "name": "Cerebras Cloud (1800+ TPS Low Latency)",
+        "base_url": "https://api.cerebras.ai/v1",
+        "default_model": "llama3.1-70b",
+        "models": ["llama3.1-70b", "llama3.1-8b"],
+        "is_native_gemini": False,
+    },
+    "deepseek": {
+        "name": "DeepSeek API (SOTA Reasoning)",
+        "base_url": "https://api.deepseek.com/v1",
+        "default_model": "deepseek-chat",
+        "models": ["deepseek-chat", "deepseek-reasoner"],
+        "is_native_gemini": False,
+    },
+    "sambanova": {
+        "name": "SambaNova Cloud",
+        "base_url": "https://api.sambanova.ai/v1",
+        "default_model": "deepseek-v3-1",
+        "models": ["deepseek-v3-1", "Meta-Llama-3.3-70B-Instruct"],
+        "is_native_gemini": False,
+    },
+    "mistral": {
+        "name": "Mistral AI",
+        "base_url": "https://api.mistral.ai/v1",
+        "default_model": "codestral-latest",
+        "models": ["codestral-latest", "mistral-medium-3-5-128b", "open-mixtral-8x7b"],
+        "is_native_gemini": False,
+    },
+    "huggingface": {
+        "name": "Hugging Face Serverless",
+        "base_url": "https://router.huggingface.co/v1",
+        "default_model": "Qwen/Qwen2.5-Coder-32B-Instruct",
+        "models": ["Qwen/Qwen2.5-Coder-32B-Instruct", "meta-llama/Llama-3.3-70B-Instruct"],
+        "is_native_gemini": False,
+    }
+}
 
-class GeminiAICore:
+
+class MultiProviderAICore:
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.environ.get("GEMINI_API_KEY", "")
+        self.api_key = api_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
         self.provider_base_url = os.environ.get("OPENAI_BASE_URL", "")
+        self.selected_provider = os.environ.get("AI_PROVIDER", "")
+        self.selected_model = os.environ.get("AI_MODEL", "")
+        self._auto_detect_provider()
 
-    def set_api_key(self, key: str, base_url: str = ""):
+    def _auto_detect_provider(self):
+        if not self.selected_provider:
+            if self.api_key.startswith("gsk_"):
+                self.selected_provider = "groq"
+            elif self.api_key.startswith("sk-or-"):
+                self.selected_provider = "openrouter"
+            elif self.api_key.startswith("csk-"):
+                self.selected_provider = "cerebras"
+            elif self.api_key.startswith("hf_"):
+                self.selected_provider = "huggingface"
+            elif self.provider_base_url and "deepseek" in self.provider_base_url:
+                self.selected_provider = "deepseek"
+            elif self.api_key.startswith("AQ.") or "AIza" in self.api_key or (self.api_key and not self.provider_base_url):
+                self.selected_provider = "google"
+            elif self.provider_base_url:
+                self.selected_provider = "custom"
+
+        if not self.selected_model and self.selected_provider in PROVIDER_PRESETS:
+            self.selected_model = PROVIDER_PRESETS[self.selected_provider]["default_model"]
+
+    def set_api_key(self, key: str, base_url: str = "", model: str = "", provider: str = ""):
         self.api_key = key.strip()
+        if provider:
+            self.selected_provider = provider.strip()
         if base_url:
             self.provider_base_url = base_url.strip()
+        elif self.selected_provider in PROVIDER_PRESETS:
+            self.provider_base_url = PROVIDER_PRESETS[self.selected_provider]["base_url"]
+
+        if model:
+            self.selected_model = model.strip()
+        elif self.selected_provider in PROVIDER_PRESETS:
+            self.selected_model = PROVIDER_PRESETS[self.selected_provider]["default_model"]
+        else:
+            self._auto_detect_provider()
 
     def has_active_key(self) -> bool:
         return bool(self.api_key and len(self.api_key) > 5)
 
     def get_provider_name(self) -> str:
-        if self.api_key.startswith("gsk_"):
-            return "Groq (Llama 3.3 70B Free Tier)"
-        elif self.api_key.startswith("sk-or-"):
-            return "OpenRouter (Free LLM API)"
-        elif self.api_key.startswith("AQ.") or "AIza" in self.api_key:
-            return "Google Gemini (AI Studio Free Tier)"
+        if self.selected_provider in PROVIDER_PRESETS:
+            return PROVIDER_PRESETS[self.selected_provider]["name"]
         elif self.provider_base_url:
-            return f"Custom OpenAI-Compatible ({self.provider_base_url})"
+            return f"Custom Provider ({self.provider_base_url})"
+        elif self.api_key.startswith("gsk_"):
+            return "Groq (Ultra-Fast)"
+        elif self.api_key.startswith("sk-or-"):
+            return "OpenRouter (Free SOTA)"
         return "Google Gemini (AI Studio)"
 
-    async def generate_response(self, system_prompt: str, user_content: str, json_mode: bool = False) -> str:
+    def get_active_model(self) -> str:
+        if self.selected_model:
+            return self.selected_model
+        if self.selected_provider in PROVIDER_PRESETS:
+            return PROVIDER_PRESETS[self.selected_provider]["default_model"]
+        return "gemini-2.5-flash"
+
+    def _get_phase_specialized_model(self, task_type: str) -> str:
+        """
+        Dynamically routes to the highest-performing model for the given cybersecurity task.
+        """
+        if self.selected_model and self.selected_model != "auto":
+            return self.selected_model
+
+        # OpenRouter Task-Specialized Model Routing
+        if self.selected_provider == "openrouter":
+            if task_type == "sast_review":
+                return "qwen/qwen-2.5-coder-32b-instruct:free"  # SOTA code & AST repair
+            elif task_type in ["threat_modeling", "dast_audit"]:
+                return "deepseek/deepseek-r1:free"  # SOTA reasoning & exploit verification
+            elif task_type == "soc_telemetry":
+                return "meta-llama/llama-3.3-70b-instruct:free"  # Low-latency correlation
+            return "deepseek/deepseek-r1:free"
+
+        # Groq Task-Specialized Model Routing
+        if self.selected_provider == "groq":
+            if task_type == "sast_review":
+                return "deepseek-r1-distill-llama-70b"
+            return "llama-3.3-70b-versatile"
+
+        # DeepSeek Native
+        if self.selected_provider == "deepseek":
+            if task_type in ["sast_review", "dast_audit"]:
+                return "deepseek-reasoner"
+            return "deepseek-chat"
+
+        # Default fallback to active model
+        return self.get_active_model()
+
+    async def generate_response(self, system_prompt: str, user_content: str, json_mode: bool = False, task_type: str = "") -> str:
         """
         Invokes LLM API with system instructions and user input.
-        Supports Google Gemini, Groq, OpenRouter, and OpenAI-compatible providers
-        from awesome-freellm-apis catalog.
+        Supports Google Gemini, Groq, OpenRouter, Cerebras, DeepSeek, SambaNova, Hugging Face,
+        and custom OpenAI-compatible providers.
         """
         if not self.has_active_key():
             return "GEMINI_API_KEY_NOT_CONFIGURED"
 
-        # 1. Groq or OpenRouter or OpenAI-compatible format
-        if self.api_key.startswith("gsk_") or self.api_key.startswith("sk-") or self.provider_base_url:
-            base_url = self.provider_base_url
-            if not base_url:
-                if self.api_key.startswith("gsk_"):
-                    base_url = "https://api.groq.com/openai/v1"
-                else:
-                    base_url = "https://openrouter.ai/api/v1"
+        # 1. Native Google Gemini API (AI Studio)
+        is_google = (
+            self.selected_provider == "google" or
+            self.api_key.startswith("AIza") or
+            (not self.provider_base_url and not self.api_key.startswith("gsk_") and not self.api_key.startswith("sk-"))
+        )
 
-            model = "llama-3.3-70b-versatile" if "groq" in base_url else "meta-llama/llama-3.3-70b-instruct:free"
+        if is_google:
+            MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-flash-latest"]
+            if self.selected_model and self.selected_model.startswith("gemini-"):
+                if self.selected_model in MODELS:
+                    MODELS.remove(self.selected_model)
+                MODELS.insert(0, self.selected_model)
 
             headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-goog-api-key": self.api_key
             }
-            if "openrouter" in base_url:
-                headers["HTTP-Referer"] = "http://localhost:8000"
-                headers["X-Title"] = "CyberSentinel AI"
 
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content}
-            ]
+            generation_config = {
+                "temperature": 0.15,
+                "maxOutputTokens": 4096
+            }
+            if json_mode:
+                generation_config["responseMimeType"] = "application/json"
+
             payload = {
-                "model": model,
-                "messages": messages,
-                "temperature": 0.2,
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": f"System Directive:\n{system_prompt}\n\nTask Input:\n{user_content}"}]
+                    }
+                ],
+                "generationConfig": generation_config
             }
-            if json_mode and "groq" in base_url:
-                payload["response_format"] = {"type": "json_object"}
 
-            url = f"{base_url.rstrip('/')}/chat/completions"
+            last_error = None
             async with httpx.AsyncClient(timeout=45.0) as client:
-                resp = await client.post(url, headers=headers, json=payload)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    choices = data.get("choices", [])
-                    if choices and "message" in choices[0]:
-                        return choices[0]["message"].get("content", "")
-                raise Exception(f"OpenAI-Compatible LLM API Error (HTTP {resp.status_code}): {resp.text}")
+                for model_name in MODELS:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+                    try:
+                        resp = await client.post(url, headers=headers, json=payload)
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            candidates = data.get("candidates", [])
+                            if candidates and "content" in candidates[0]:
+                                parts = candidates[0]["content"].get("parts", [])
+                                if parts and "text" in parts[0]:
+                                    return parts[0]["text"]
+                            return ""
+                        elif resp.status_code in [503, 429, 404]:
+                            last_error = f"HTTP {resp.status_code} on {model_name}"
+                            continue
+                        else:
+                            raise Exception(f"Google AI Studio Error (HTTP {resp.status_code}): {resp.text}")
+                    except Exception as e:
+                        last_error = str(e)
+                        continue
 
-        # 2. Google Gemini Native API (Default from AI Studio)
-        MODELS = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-flash-latest"]
-        last_error = None
+            if last_error:
+                raise Exception(f"Gemini API temporarily unavailable: {last_error}")
+            return ""
+
+        # 2. OpenAI-Compatible Providers (Groq, OpenRouter, Cerebras, DeepSeek, etc.)
+        base_url = self.provider_base_url
+        if not base_url and self.selected_provider in PROVIDER_PRESETS:
+            base_url = PROVIDER_PRESETS[self.selected_provider]["base_url"]
+        elif not base_url:
+            if self.api_key.startswith("gsk_"):
+                base_url = "https://api.groq.com/openai/v1"
+            elif self.api_key.startswith("csk-"):
+                base_url = "https://api.cerebras.ai/v1"
+            else:
+                base_url = "https://openrouter.ai/api/v1"
+
+        model = self._get_phase_specialized_model(task_type)
 
         headers = {
-            "Content-Type": "application/json",
-            "X-goog-api-key": self.api_key
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
         }
+        if "openrouter" in base_url:
+            headers["HTTP-Referer"] = "http://localhost:8000"
+            headers["X-Title"] = "CyberSentinel AI"
 
-        generation_config = {
-            "temperature": 0.2,
-            "maxOutputTokens": 4096
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_content}
+        ]
+        payload = {
+            "model": model,
+            "messages": messages,
+            "temperature": 0.15,
         }
         if json_mode:
-            generation_config["responseMimeType"] = "application/json"
+            # Most modern providers support json_object response format
+            if any(p in base_url for p in ["groq", "cerebras", "deepseek", "openrouter"]):
+                payload["response_format"] = {"type": "json_object"}
 
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": f"System Directive:\n{system_prompt}\n\nTask Input:\n{user_content}"}]
-                }
-            ],
-            "generationConfig": generation_config
-        }
-
+        url = f"{base_url.rstrip('/')}/chat/completions"
         async with httpx.AsyncClient(timeout=45.0) as client:
-            for model_name in MODELS:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
-                try:
-                    resp = await client.post(url, headers=headers, json=payload)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        candidates = data.get("candidates", [])
-                        if candidates and "content" in candidates[0]:
-                            parts = candidates[0]["content"].get("parts", [])
-                            if parts and "text" in parts[0]:
-                                return parts[0]["text"]
-                        return ""
-                    elif resp.status_code in [503, 429]:
-                        last_error = f"HTTP {resp.status_code} ({model_name} busy, trying alternate model)"
-                        continue
-                    else:
-                        raise Exception(f"Google AI Studio API Error (HTTP {resp.status_code}): {resp.text}")
-                except Exception as e:
-                    last_error = str(e)
-                    continue
-
-        if last_error:
-            raise Exception(f"Gemini Models temporarily unavailable: {last_error}")
-        return ""
-
+            resp = await client.post(url, headers=headers, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                choices = data.get("choices", [])
+                if choices and "message" in choices[0]:
+                    return choices[0]["message"].get("content", "")
+            raise Exception(f"AI Provider ({self.get_provider_name()}) Error HTTP {resp.status_code}: {resp.text}")
 
     # Phase 1: AI Threat Modeling
     async def ai_threat_model(self, architecture_text: str) -> Dict[str, Any]:
@@ -163,14 +319,14 @@ class GeminiAICore:
             "Ensure 'what_to_update' and 'how_to_update' are always populated with clear, actionable items."
         )
         try:
-            raw = await self.generate_response(system_prompt, architecture_text, json_mode=True)
+            raw = await self.generate_response(system_prompt, architecture_text, json_mode=True, task_type="threat_modeling")
             if raw == "GEMINI_API_KEY_NOT_CONFIGURED":
                 return {"status": "awaiting_api_key"}
             return json.loads(raw)
         except Exception as e:
             return {"error": str(e)}
 
-    # Phase 2: Cognitive SAST & Git Diff Patch Generation
+    # Phase 2: Cognitive SAST & Git Diff Patch Generation (Powered by SOTA Code Models like Qwen 2.5 Coder / DeepSeek)
     async def ai_sast_code_review(self, filename: str, code_content: str, static_ast_findings: list) -> Dict[str, Any]:
         system_prompt = (
             "You are an Elite White-Hat Security Researcher and Senior Staff Software Engineer. "
@@ -186,7 +342,7 @@ class GeminiAICore:
         )
         user_content = f"File: {filename}\nInitial AST Signals: {json.dumps(static_ast_findings)}\n\nSource Code:\n{code_content}"
         try:
-            raw = await self.generate_response(system_prompt, user_content, json_mode=True)
+            raw = await self.generate_response(system_prompt, user_content, json_mode=True, task_type="sast_review")
             if raw == "GEMINI_API_KEY_NOT_CONFIGURED":
                 return {"status": "awaiting_api_key"}
             return json.loads(raw)
@@ -208,7 +364,7 @@ class GeminiAICore:
         )
         user_content = f"Workflow:\n{workflow_content}\n\nDependencies:\n{json.dumps(dependencies_summary)}\n\nSample Code:\n{source_code[:2000]}"
         try:
-            raw = await self.generate_response(system_prompt, user_content, json_mode=True)
+            raw = await self.generate_response(system_prompt, user_content, json_mode=True, task_type="supply_chain")
             if raw == "GEMINI_API_KEY_NOT_CONFIGURED":
                 return {"status": "awaiting_api_key"}
             return json.loads(raw)
@@ -231,7 +387,7 @@ class GeminiAICore:
         )
         user_content = f"Target: {target_url}\nMatrix Results:\n{json.dumps(endpoint_matrix)}"
         try:
-            raw = await self.generate_response(system_prompt, user_content, json_mode=True)
+            raw = await self.generate_response(system_prompt, user_content, json_mode=True, task_type="dast_audit")
             if raw == "GEMINI_API_KEY_NOT_CONFIGURED":
                 return {"status": "awaiting_api_key"}
             return json.loads(raw)
@@ -255,13 +411,13 @@ class GeminiAICore:
         )
         user_content = f"Detected Anomalies:\n{json.dumps(detected_anomalies)}\n\nSession Telemetry:\n{json.dumps(session_telemetry)}"
         try:
-            raw = await self.generate_response(system_prompt, user_content, json_mode=True)
+            raw = await self.generate_response(system_prompt, user_content, json_mode=True, task_type="soc_telemetry")
             if raw == "GEMINI_API_KEY_NOT_CONFIGURED":
                 return {"status": "awaiting_api_key"}
             return json.loads(raw)
         except Exception as e:
             return {"error": str(e)}
 
-# Global Singleton
-ai_core = GeminiAICore()
 
+# Global Singleton
+ai_core = MultiProviderAICore()

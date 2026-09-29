@@ -727,36 +727,208 @@ async function dispatchContainment(level, incidentId, userId, ip) {
 
 /* -------------------------------------------------------------
    Helpers
-   ------------------------------------------------------------- */
+const PROVIDER_METADATA = {
+  "google": {
+    "name": "Google Gemini (AI Studio Free Tier)",
+    "link": "https://aistudio.google.com/app/apikey",
+    "linkLabel": "🔑 Get Free Google AI Studio Key →",
+    "placeholder": "AIzaSy...",
+    "models": [
+      { "id": "auto", "name": "Auto-Optimal (Gemini 2.5 Flash default)" },
+      { "id": "gemini-2.5-flash", "name": "Gemini 2.5 Flash (SOTA Reasoning & Speed)" },
+      { "id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash (Fast Multimodal)" },
+      { "id": "gemini-1.5-pro", "name": "Gemini 1.5 Pro (Deep 2M Context)" },
+      { "id": "gemini-1.5-flash", "name": "Gemini 1.5 Flash (Lightweight)" }
+    ]
+  },
+  "groq": {
+    "name": "Groq (Ultra-Fast 300+ TPS)",
+    "link": "https://console.groq.com/keys",
+    "linkLabel": "⚡ Get Free Groq Key (No Card) →",
+    "placeholder": "gsk_...",
+    "models": [
+      { "id": "auto", "name": "Auto-Optimal (Llama 3.3 70B & DeepSeek R1)" },
+      { "id": "llama-3.3-70b-versatile", "name": "Llama 3.3 70B Versatile (Ultra-Fast Reasoning)" },
+      { "id": "deepseek-r1-distill-llama-70b", "name": "DeepSeek R1 Distill Llama 70B (Deep Reasoning)" },
+      { "id": "mixtral-8x7b-32768", "name": "Mixtral 8x7B (Fast MoE)" }
+    ]
+  },
+  "openrouter": {
+    "name": "OpenRouter (Free SOTA Models)",
+    "link": "https://openrouter.ai/workspaces/default/keys",
+    "linkLabel": "🌐 Get Free OpenRouter Key →",
+    "placeholder": "sk-or-v1-...",
+    "models": [
+      { "id": "auto", "name": "Auto-Optimal (Specialized: DeepSeek/Qwen for SAST, Llama for SOC)" },
+      { "id": "deepseek/deepseek-r1:free", "name": "DeepSeek R1 Free (SOTA SWE-bench Code Reasoning)" },
+      { "id": "qwen/qwen-2.5-coder-32b-instruct:free", "name": "Qwen 2.5 Coder 32B Free (SOTA Code Security Patches)" },
+      { "id": "meta-llama/llama-3.3-70b-instruct:free", "name": "Llama 3.3 70B Instruct Free" },
+      { "id": "google/gemini-2.0-flash-exp:free", "name": "Gemini 2.0 Flash Exp Free" }
+    ]
+  },
+  "cerebras": {
+    "name": "Cerebras Cloud (1800+ TPS)",
+    "link": "https://cloud.cerebras.ai/",
+    "linkLabel": "🚀 Get Free Cerebras Key →",
+    "placeholder": "csk-...",
+    "models": [
+      { "id": "llama3.1-70b", "name": "Llama 3.1 70B (1800 Tokens/sec Real-Time)" },
+      { "id": "llama3.1-8b", "name": "Llama 3.1 8B (Ultra Low Latency)" }
+    ]
+  },
+  "deepseek": {
+    "name": "DeepSeek API",
+    "link": "https://platform.deepseek.com/api_keys",
+    "linkLabel": "🧠 Get DeepSeek Key →",
+    "placeholder": "sk-...",
+    "models": [
+      { "id": "deepseek-reasoner", "name": "DeepSeek Reasoner (R1 - Top Reasoning for SAST & Exploit Verif)" },
+      { "id": "deepseek-chat", "name": "DeepSeek Chat (V3 - Fast & Versatile)" }
+    ]
+  },
+  "sambanova": {
+    "name": "SambaNova Cloud",
+    "link": "https://cloud.sambanova.ai/apis",
+    "linkLabel": "🔥 Get SambaNova Key →",
+    "placeholder": "Paste SambaNova key...",
+    "models": [
+      { "id": "deepseek-v3-1", "name": "DeepSeek V3.1 (High Performance)" },
+      { "id": "Meta-Llama-3.3-70B-Instruct", "name": "Meta Llama 3.3 70B Instruct" }
+    ]
+  },
+  "huggingface": {
+    "name": "Hugging Face Serverless",
+    "link": "https://huggingface.co/settings/tokens",
+    "linkLabel": "🤗 Get Hugging Face Token →",
+    "placeholder": "hf_...",
+    "models": [
+      { "id": "Qwen/Qwen2.5-Coder-32B-Instruct", "name": "Qwen 2.5 Coder 32B Instruct (Specialized Code Auditor)" },
+      { "id": "meta-llama/Llama-3.3-70B-Instruct", "name": "Meta Llama 3.3 70B Instruct" }
+    ]
+  },
+  "mistral": {
+    "name": "Mistral AI",
+    "link": "https://console.mistral.ai/api-keys",
+    "linkLabel": "🛡️ Get Mistral Key →",
+    "placeholder": "Paste Mistral key...",
+    "models": [
+      { "id": "codestral-latest", "name": "Codestral Latest (Code Security & Patching)" },
+      { "id": "mistral-medium-3-5-128b", "name": "Mistral Medium 3.5 (128B)" },
+      { "id": "open-mixtral-8x7b", "name": "Mixtral 8x7B" }
+    ]
+  },
+  "custom": {
+    "name": "Custom OpenAI-Compatible",
+    "link": "https://github.com/open-free-llm-api/awesome-freellm-apis",
+    "linkLabel": "📖 Browse 31+ Providers Catalog →",
+    "placeholder": "Custom API Key...",
+    "models": [
+      { "id": "auto", "name": "Custom Model (Specified below)" }
+    ]
+  }
+};
+
 function initModal() {
   const modal = document.getElementById("api-key-modal");
   const btnOpen = document.getElementById("btn-api-key");
   const btnClose = document.getElementById("modal-close");
   const btnCancel = document.getElementById("modal-cancel");
   const btnSave = document.getElementById("btn-save-key");
+  const selectProvider = document.getElementById("select-provider");
+  const selectModel = document.getElementById("select-model");
+  const inputKey = document.getElementById("input-api-key");
+  const keyGuideLink = document.getElementById("key-guide-link");
+  const groupBaseUrl = document.getElementById("group-base-url");
 
-  btnOpen.addEventListener("click", () => modal.classList.add("active"));
+  function updateProviderUI(providerId) {
+    const meta = PROVIDER_METADATA[providerId] || PROVIDER_METADATA["google"];
+    keyGuideLink.href = meta.link;
+    keyGuideLink.textContent = meta.linkLabel;
+    inputKey.placeholder = meta.placeholder;
+
+    if (groupBaseUrl) {
+      groupBaseUrl.style.display = (providerId === "custom") ? "block" : "none";
+    }
+
+    // Populate models
+    selectModel.innerHTML = "";
+    (meta.models || []).forEach(m => {
+      const opt = document.createElement("option");
+      opt.value = m.id;
+      opt.textContent = m.name;
+      selectModel.appendChild(opt);
+    });
+  }
+
+  selectProvider.addEventListener("change", (e) => {
+    updateProviderUI(e.target.value);
+  });
+
+  // Auto-detect provider if user pastes a key
+  inputKey.addEventListener("input", (e) => {
+    const val = e.target.value.trim();
+    if (val.startsWith("gsk_") && selectProvider.value !== "groq") {
+      selectProvider.value = "groq";
+      updateProviderUI("groq");
+      showToast("Auto-detected Provider: Groq (Llama 3.3 70B & DeepSeek R1)");
+    } else if (val.startsWith("sk-or-") && selectProvider.value !== "openrouter") {
+      selectProvider.value = "openrouter";
+      updateProviderUI("openrouter");
+      showToast("Auto-detected Provider: OpenRouter (DeepSeek R1 & Qwen 2.5 Coder)");
+    } else if (val.startsWith("csk-") && selectProvider.value !== "cerebras") {
+      selectProvider.value = "cerebras";
+      updateProviderUI("cerebras");
+      showToast("Auto-detected Provider: Cerebras (Ultra-Fast 1800 TPS)");
+    } else if (val.startsWith("hf_") && selectProvider.value !== "huggingface") {
+      selectProvider.value = "huggingface";
+      updateProviderUI("huggingface");
+      showToast("Auto-detected Provider: Hugging Face (Qwen 2.5 Coder)");
+    } else if (val.startsWith("AIzaSy") && selectProvider.value !== "google") {
+      selectProvider.value = "google";
+      updateProviderUI("google");
+      showToast("Auto-detected Provider: Google Gemini");
+    }
+  });
+
+  btnOpen.addEventListener("click", () => {
+    modal.classList.add("active");
+    updateProviderUI(selectProvider.value);
+  });
   btnClose.addEventListener("click", () => modal.classList.remove("active"));
   btnCancel.addEventListener("click", () => modal.classList.remove("active"));
 
   btnSave.addEventListener("click", async () => {
-    const key = document.getElementById("input-api-key").value.trim();
-    if (!key) return;
+    const key = inputKey.value.trim();
+    const provider = selectProvider.value;
+    const model = selectModel.value;
+    const baseUrl = document.getElementById("input-base-url") ? document.getElementById("input-base-url").value.trim() : "";
+
+    if (!key) {
+      alert("Please provide an API Key.");
+      return;
+    }
+
     try {
       const resp = await fetch("/api/set-api-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key })
+        body: JSON.stringify({ key, provider, model, base_url: baseUrl })
       });
+      const result = await resp.json();
       if (resp.ok) {
-        showToast("Gemini API Key Updated");
+        showToast(result.message || "AI Model & Key activated successfully!");
         modal.classList.remove("active");
         checkStatus();
+      } else {
+        alert("Failed to configure key: " + (result.detail || result.error || "Unknown error"));
       }
     } catch (e) {
-      alert("Error: " + e.message);
+      alert("Error saving API configuration: " + e.message);
     }
   });
+
+  // Initial populate
+  updateProviderUI("google");
 }
 
 async function checkStatus() {
@@ -767,9 +939,15 @@ async function checkStatus() {
     const keyBtnText = document.getElementById("key-btn-text");
 
     if (data.has_gemini_key) {
-      statusText.textContent = "AI: Live (Gemini Flash)";
-      keyBtnText.textContent = "Gemini Key: Active";
+      const modelDisplay = data.model || "SOTA";
+      const providerDisplay = data.provider ? data.provider.split(" ")[0] : "AI";
+      statusText.textContent = `AI: ${providerDisplay} (${modelDisplay})`;
+      keyBtnText.textContent = `${providerDisplay}: Active`;
       keyBtnText.parentElement.classList.add("btn-action");
+    } else {
+      statusText.textContent = "AI: Demo Mode (Click to Add Key)";
+      keyBtnText.textContent = "Connect Free AI Key";
+      keyBtnText.parentElement.classList.remove("btn-action");
     }
   } catch (e) {}
 }
