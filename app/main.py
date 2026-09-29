@@ -79,6 +79,7 @@ soc_engine = BlueTeamSOCEngine()
 from app.engines.ai_core import ai_core, PROVIDER_PRESETS
 from app.engines.repo_ingester import repo_ingester
 from app.engines.vibe_checker import vibe_auditor
+from app.engines.agent_pipeline import agent_feedback_loop
 
 @app.get("/api/status")
 async def get_status():
@@ -168,6 +169,30 @@ async def audit_vibe_70_checks(payload: Optional[Dict[str, Any]] = Body(None)):
     env = payload.get("env_content", "") if payload else ""
     wf = payload.get("workflow", "") if payload else ""
     return vibe_auditor.run_full_audit(target_code=code, target_env=env, target_workflow=wf)
+
+# -------------------------------------------------------------
+# 3-AGENT ADAPTIVE TESTING LOOP
+# -------------------------------------------------------------
+@app.post("/api/agents/collaborative-loop")
+async def run_agent_collaborative_loop(payload: Dict[str, Any] = Body(...)):
+    target_url = payload.get("target_url", "http://localhost:8000/api/status")
+    method = payload.get("method", "GET")
+    headers = payload.get("headers")
+    params = payload.get("params")
+    body = payload.get("body")
+    cycles = int(payload.get("cycles", 3))
+    prompt = payload.get("prompt", "")
+
+    result = await agent_feedback_loop.run_feedback_loop(
+        target_url=target_url,
+        initial_method=method,
+        initial_headers=headers,
+        initial_params=params,
+        initial_body=body,
+        max_iterations=cycles,
+        user_prompt=prompt
+    )
+    return result
 
 
 # -------------------------------------------------------------
