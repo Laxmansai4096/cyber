@@ -77,6 +77,7 @@ dast_engine = StatefulDASTEngine()
 soc_engine = BlueTeamSOCEngine()
 
 from app.engines.ai_core import ai_core, PROVIDER_PRESETS
+from app.engines.repo_ingester import repo_ingester
 
 @app.get("/api/status")
 async def get_status():
@@ -115,6 +116,43 @@ async def set_api_key(payload: Dict[str, Any] = Body(...)):
         "model": ai_core.get_active_model(),
         "message": f"Successfully activated {ai_core.get_provider_name()} with model {ai_core.get_active_model()}"
     }
+
+# -------------------------------------------------------------
+# REPO & LOGS INGESTION: One-Click Audit Pipelines
+# -------------------------------------------------------------
+@app.post("/api/ingest/github-repo")
+async def ingest_github_repo(payload: Dict[str, Any] = Body(...)):
+    repo_url = payload.get("repo_url", "").strip()
+    if not repo_url:
+        raise HTTPException(status_code=400, detail="GitHub repository URL is required")
+    try:
+        result = await repo_ingester.ingest_github_repository(repo_url)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/ingest/logs-url")
+async def ingest_logs_from_url(payload: Dict[str, Any] = Body(...)):
+    log_url = payload.get("log_url", "").strip()
+    if not log_url:
+        raise HTTPException(status_code=400, detail="Live log stream URL is required")
+    try:
+        events = await repo_ingester.ingest_live_logs_from_url(log_url)
+        soc_results = soc_engine.analyze_session_logs(events)
+        ai_investigation = None
+        if ai_core.has_active_key():
+            ai_investigation = await ai_core.ai_soc_incident_investigation(events, soc_results["incidents"])
+        return {
+            "status": "SUCCESS",
+            "log_url": log_url,
+            "events_count": len(events),
+            "events_json": json.dumps(events, indent=2),
+            "soc_analysis": soc_results,
+            "active_containments": soar_dispatcher.list_containments(),
+            "ai_soc_investigation": ai_investigation
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # -------------------------------------------------------------
 # PHASE 1: Architecture & Threat Modeling

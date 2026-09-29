@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initModal();
   checkStatus();
   initInputHandlers();
+  initRepoAuditor();
 
   // Pre-load all samples into inputs and execute initial baseline
   loadAllPresetsAndRun();
@@ -126,7 +127,129 @@ function initInputHandlers() {
   document.getElementById("btn-clear-p5").addEventListener("click", () => {
     document.getElementById("p5-input-telemetry").value = "";
   });
-  document.getElementById("btn-run-phase5").addEventListener("click", runPhase5);
+  // Phase 5 Live Log URL Fetcher
+  const btnFetchLiveLogs = document.getElementById("btn-fetch-live-logs");
+  if (btnFetchLiveLogs) {
+    btnFetchLiveLogs.addEventListener("click", async () => {
+      const urlInput = document.getElementById("p5-input-log-url");
+      const logUrl = urlInput.value.trim();
+      if (!logUrl) {
+        showToast("Please enter a valid HTTP log stream URL.");
+        return;
+      }
+      showToast("Streaming and correlating live logs...");
+      try {
+        const resp = await fetch("/api/ingest/logs-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ log_url: logUrl })
+        });
+        const result = await resp.json();
+        if (resp.ok) {
+          document.getElementById("p5-input-telemetry").value = result.events_json;
+          showToast(`Ingested ${result.events_count} live security events!`);
+          runPhase5();
+        } else {
+          alert("Log Ingestion Failed: " + (result.detail || "Could not fetch logs"));
+        }
+      } catch (err) {
+        alert("Log Ingestion Error: " + err.message);
+      }
+    });
+  }
+}
+
+/* -------------------------------------------------------------
+   GitHub One-Click Repository Auditor
+   ------------------------------------------------------------- */
+function initRepoAuditor() {
+  const btnAudit = document.getElementById("btn-ingest-repo");
+  const inputRepo = document.getElementById("input-repo-url");
+  const statusBar = document.getElementById("repo-ingest-status");
+
+  // Presets
+  const presets = [
+    { id: "preset-crapi", url: "https://github.com/OWASP/crAPI" },
+    { id: "preset-pygoat", url: "https://github.com/adeyosemanputra/pygoat" },
+    { id: "preset-fastapi", url: "https://github.com/nsidnev/fastapi-realworld-example-app" }
+  ];
+
+  presets.forEach(p => {
+    const btn = document.getElementById(p.id);
+    if (btn) {
+      btn.addEventListener("click", () => {
+        inputRepo.value = p.url;
+        triggerRepoAudit(p.url);
+      });
+    }
+  });
+
+  if (btnAudit) {
+    btnAudit.addEventListener("click", () => {
+      const url = inputRepo.value.trim();
+      if (!url) {
+        showToast("Please enter a GitHub repository URL");
+        return;
+      }
+      triggerRepoAudit(url);
+    });
+  }
+
+  async function triggerRepoAudit(repoUrl) {
+    statusBar.style.display = "flex";
+    statusBar.innerHTML = `
+      <div class="flex-align">
+        <span class="pulsing-dot online"></span>
+        <span>Cloning and inspecting <code>${escapeHtml(repoUrl)}</code> (discovering architecture, source code, CI/CD & SBOM)...</span>
+      </div>
+    `;
+    btnAudit.disabled = true;
+    showToast("Cloning GitHub repository shallow tree...");
+
+    try {
+      const resp = await fetch("/api/ingest/github-repo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ repo_url: repoUrl })
+      });
+      const data = await resp.json();
+      btnAudit.disabled = false;
+
+      if (!resp.ok) {
+        statusBar.innerHTML = `<span style="color:var(--red-critical);">❌ Error: ${escapeHtml(data.detail || "Failed to clone repository")}</span>`;
+        return;
+      }
+
+      // Populate Phase 1 (Architecture & STRIDE)
+      document.getElementById("p1-input-text").value = data.architecture_spec;
+
+      // Populate Phase 2 (Code Review & SAST)
+      document.getElementById("p2-input-code").value = data.primary_source_code;
+
+      // Populate Phase 3 (CI/CD & Supply Chain)
+      document.getElementById("p3-input-workflow").value = data.workflow_content;
+      document.getElementById("p3-input-requirements").value = data.dependencies_content;
+
+      statusBar.innerHTML = `
+        <div class="flex-align">
+          <span style="color:var(--green-success); font-weight:700;">✓ Ingested ${escapeHtml(data.repo_name)}:</span>
+          <span>Arch: <code>${escapeHtml(data.architecture_filename)}</code> | Code: <code>${escapeHtml(data.primary_source_filename)}</code> (${data.stats.source_files_found} files) | Workflow: <code>${escapeHtml(data.workflow_filename)}</code> | Deps: <code>${escapeHtml(data.dependencies_filename)}</code></span>
+        </div>
+        <span class="pill pill-green">Audit Running</span>
+      `;
+
+      showToast(`Repository ${data.repo_name} ingested! Running multi-phase security review...`);
+
+      // Trigger automatic review across all 3 code/pipeline phases
+      runPhase1();
+      runPhase2();
+      runPhase3();
+
+    } catch (err) {
+      btnAudit.disabled = false;
+      statusBar.innerHTML = `<span style="color:var(--red-critical);">❌ Ingestion Error: ${escapeHtml(err.message)}</span>`;
+    }
+  }
 }
 
 async function loadAllPresetsAndRun() {

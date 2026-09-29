@@ -47,6 +47,33 @@
     </div>
   </header>
 
+  <!-- GitHub One-Click Repository Auditor Bar -->
+  <section class="repo-audit-banner">
+    <div class="repo-audit-container">
+      <div class="repo-input-group">
+        <span class="repo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+          </svg>
+        </span>
+        <input type="text" id="input-repo-url" placeholder="https://github.com/OWASP/crAPI (or paste any GitHub repository URL)..." autocomplete="off">
+        <button class="btn btn-action" id="btn-ingest-repo">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Clone & Audit Entire Repo
+        </button>
+      </div>
+      <div class="repo-quick-links">
+        <span class="quick-label">⚡ Test Verified Open-Source Repos:</span>
+        <button class="btn btn-xs btn-ghost" id="preset-crapi" data-url="https://github.com/OWASP/crAPI">OWASP crAPI (Microservices)</button>
+        <button class="btn btn-xs btn-ghost" id="preset-pygoat" data-url="https://github.com/adeyosemanputra/pygoat">PyGoat (Django Sinks)</button>
+        <button class="btn btn-xs btn-ghost" id="preset-fastapi" data-url="https://github.com/nsidnev/fastapi-realworld-example-app">FastAPI RealWorld</button>
+      </div>
+    </div>
+    <div id="repo-ingest-status" class="repo-status-bar" style="display:none;"></div>
+  </section>
+
   <!-- 5-Phase Navigation Bar (Sequential Testing Order) -->
   <nav class="phase-navbar">
     <button class="phase-tab active" data-phase="phase1">
@@ -324,7 +351,16 @@
               <button class="btn btn-sm btn-ghost" id="btn-clear-p5">Clear</button>
             </div>
           </div>
-          <p class="input-hint">Paste chronological JSON user session events or access log stream:</p>
+          <!-- Live Log URL Ingestion Box -->
+          <div class="log-url-box mb-12">
+            <label for="p5-input-log-url" style="font-size:0.75rem; color:var(--cyan-primary); display:block; margin-bottom:4px; font-weight:600;">🌐 Stream Live Logs from HTTP / Webhook URL:</label>
+            <div style="display:flex; gap:8px;">
+              <input type="text" id="p5-input-log-url" placeholder="https://api.yourdomain.com/logs or raw log stream URL..." style="flex:1; padding:8px 12px; font-size:0.8rem; background:rgba(15,23,42,0.8); border:1px solid rgba(56,189,248,0.3); border-radius:var(--radius-sm); color:#fff; font-family:var(--font-mono); outline:none;">
+              <button class="btn btn-sm btn-secondary" id="btn-fetch-live-logs">Fetch & Analyze</button>
+            </div>
+          </div>
+
+          <p class="input-hint">Chronological JSON user session events or access log stream:</p>
           <textarea id="p5-input-telemetry" class="input-editor" placeholder="Paste session telemetry JSON here..."></textarea>
           <button class="btn btn-action w-100 mt-12" id="btn-run-phase5">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
