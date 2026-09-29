@@ -28,8 +28,8 @@ PROVIDER_PRESETS = {
     "google": {
         "name": "Google Gemini (AI Studio)",
         "base_url": "https://generativelanguage.googleapis.com/v1beta",
-        "default_model": "gemini-2.5-flash",
-        "models": ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
+        "default_model": "gemini-3.5-flash",
+        "models": ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"],
         "is_native_gemini": True,
     },
     "groq": {
@@ -203,7 +203,7 @@ class MultiProviderAICore:
         )
 
         if is_google:
-            MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-flash-latest"]
+            MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-flash-latest"]
             if self.selected_model and self.selected_model.startswith("gemini-"):
                 if self.selected_model in MODELS:
                     MODELS.remove(self.selected_model)
@@ -232,7 +232,7 @@ class MultiProviderAICore:
             }
 
             last_error = None
-            async with httpx.AsyncClient(timeout=45.0) as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 for model_name in MODELS:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
                     try:
@@ -242,8 +242,9 @@ class MultiProviderAICore:
                             candidates = data.get("candidates", [])
                             if candidates and "content" in candidates[0]:
                                 parts = candidates[0]["content"].get("parts", [])
-                                if parts and "text" in parts[0]:
-                                    return parts[0]["text"]
+                                text_parts = [p.get("text", "") for p in parts if "text" in p]
+                                if text_parts:
+                                    return "".join(text_parts).strip()
                             return ""
                         elif resp.status_code in [503, 429, 404]:
                             last_error = f"HTTP {resp.status_code} on {model_name}"
@@ -295,7 +296,7 @@ class MultiProviderAICore:
                 payload["response_format"] = {"type": "json_object"}
 
         url = f"{base_url.rstrip('/')}/chat/completions"
-        async with httpx.AsyncClient(timeout=45.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(url, headers=headers, json=payload)
             if resp.status_code == 200:
                 data = resp.json()

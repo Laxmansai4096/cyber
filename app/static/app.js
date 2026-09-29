@@ -726,7 +726,8 @@ async function dispatchContainment(level, incidentId, userId, ip) {
 }
 
 /* -------------------------------------------------------------
-   Helpers
+   Helpers & Multi-Model Providers
+   ------------------------------------------------------------- */
 const PROVIDER_METADATA = {
   "google": {
     "name": "Google Gemini (AI Studio Free Tier)",
