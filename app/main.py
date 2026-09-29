@@ -78,6 +78,7 @@ soc_engine = BlueTeamSOCEngine()
 
 from app.engines.ai_core import ai_core, PROVIDER_PRESETS
 from app.engines.repo_ingester import repo_ingester
+from app.engines.vibe_checker import vibe_auditor
 
 @app.get("/api/status")
 async def get_status():
@@ -153,6 +154,21 @@ async def ingest_logs_from_url(payload: Dict[str, Any] = Body(...)):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# -------------------------------------------------------------
+# 70-POINT SECURITY LAUNCH FILTER (Checks 01–70 by Arnie Verma)
+# -------------------------------------------------------------
+@app.get("/api/audit/vibe-70-checks")
+async def get_vibe_70_checks_baseline():
+    return vibe_auditor.run_full_audit()
+
+@app.post("/api/audit/vibe-70-checks")
+async def audit_vibe_70_checks(payload: Optional[Dict[str, Any]] = Body(None)):
+    code = payload.get("source_code", "") if payload else ""
+    env = payload.get("env_content", "") if payload else ""
+    wf = payload.get("workflow", "") if payload else ""
+    return vibe_auditor.run_full_audit(target_code=code, target_env=env, target_workflow=wf)
+
 
 # -------------------------------------------------------------
 # PHASE 1: Architecture & Threat Modeling
